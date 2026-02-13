@@ -1,0 +1,104 @@
+[
+    {
+        "rule_id": "rule_phytosanitary_generic",
+        "regulation": "International Plant Protection Convention",
+        "description": "Required for all plant and plant product exports.",
+        "product_category": "Plant",
+        "origin": "any",
+        "destination": "any",
+        "required_documents": [
+            {
+                "name": "Phytosanitary Certificate",
+                "category": "Organic",
+                "description": "Certifies that plants/plant products are free from regulated pests.",
+                "isMandatory": true
+            }
+        ],
+        "criticality": "Blocking"
+    },
+    {
+        "rule_id": "rule_co_generic",
+        "regulation": "General Customs Recommendation",
+        "description": "Standard requirement for determining duty rates.",
+        "product_category": "General",
+        "origin": "any",
+        "destination": "any",
+        "required_documents": [
+            {
+                "name": "Certificate of Origin",
+                "category": "Customs",
+                "description": "Declares where the goods were manufactured/produced.",
+                "isMandatory": true
+            }
+        ],
+        "criticality": "Blocking"
+    },
+    {
+        "rule_id": "rule_vietnam_imports",
+        "regulation": "Vietnam Customs Law",
+        "description": "Specific requirement for imports into Vietnam.",
+        "product_category": "General",
+        "origin": "any",
+        "destination": "Vietnam",
+        "required_documents": [
+            {
+                "name": "Bill of Lading",
+                "category": "Transport",
+                "description": "Original B/L required for customs clearance.",
+                "isMandatory": true
+            }
+        ],
+        "criticality": "Blocking"
+    },
+    {
+        "rule_id": "rule_halal_generic",
+        "regulation": "Halal Certification",
+        "description": "Required for meat products to Muslim-majority countries (Example).",
+        "product_category": "Meat",
+        "origin": "any",
+        "destination": "Indonesia",
+        "required_documents": [
+            {
+                "name": "Halal Certificate",
+                "category": "Regulatory",
+                "description": "Proof of Halal slaughter/processing.",
+                "isMandatory": true
+            }
+        ],
+        "criticality": "Blocking"
+    },
+    {
+        "rule_id": "rule_eudr_eu_import",
+        "regulation": "EU Deforestation Regulation (EUDR)",
+        "description": "Requires geolocation and deforestation-free proof for relevant commodities.",
+        "product_category": "General",
+        "origin": "any",
+        "destination": "EU",
+        "required_documents": [
+            {
+                "name": "Deforestation Due Diligence Statement",
+                "category": "Regulatory",
+                "description": "Proof of geolocation and deforestation-free status.",
+                "isMandatory": true
+            }
+        ],
+        "criticality": "Blocking"
+    },
+    {
+        "rule_id": "rule_fsma_usa_import",
+        "regulation": "FDA Food Safety Modernization Act (FSMA)",
+        "description": "Requires FSVP and PCQI documentation for US imports.",
+        "product_category": "General",
+        "origin": "any",
+        "destination": "USA",
+        "required_documents": [
+            {
+                "name": "FSVP Plan",
+                "category": "Regulatory",
+                "description": "Foreign Supplier Verification Program documentation.",
+                "isMandatory": true
+            }
+        ],
+        "criticality": "Blocking"
+    }
+]

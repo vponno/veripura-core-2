@@ -1,0 +1,21 @@
+{
+  "projects": {
+    "default": "veripura-connect-live"
+  },
+  "targets": {
+    "veripura-connect-live": {
+      "storage": {
+        "uploads": [
+          "veripura-connect-live-uploads"
+        ]
+      }
+    }
+  },
+  "etags": {
+    "veripura-connect-live": {
+      "extensionInstances": {
+        "firestore-bigquery-export": "79ff9dafadfac7253ce096de16e43105fec58131159f9d603d30f666f07d0899"
+      }
+    }
+  }
+}

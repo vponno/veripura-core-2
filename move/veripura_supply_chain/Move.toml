@@ -1,0 +1,10 @@
+[package]
+name = "VeriPuraSupplyChain"
+version = "0.0.1"
+published-at = "0x0"
+
+[dependencies]
+Iota = { git = "https://github.com/iotaledger/iota.git", subdir = "crates/iota-framework/packages/iota-framework", rev = "testnet" }
+
+[addresses]
+veripura = "0x0"
