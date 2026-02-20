@@ -25,4 +25,4 @@ steps:
       - '8080'
 
 images:
-  - 'gcr.io/$PROJECT_ID/veripura-core-2:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/veripura-core-2:latest'

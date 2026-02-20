@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Truck, Package, ArrowRight, Wallet } from 'lucide-react';
+import { Truck, Package, ArrowRight, Wallet, ShieldCheck, Zap, Globe, Leaf, FileCheck, Bot } from 'lucide-react';
 
 const Login: React.FC = () => {
     const { signInWithGoogle, currentUser } = useAuth();
@@ -10,7 +10,6 @@ const Login: React.FC = () => {
     const handleLogin = async () => {
         try {
             await signInWithGoogle();
-            // Note: SignInWithRedirect will reload the page, so navigation happens after redirect
         } catch (error) {
             console.error("Login failed", error);
         }
@@ -23,37 +22,45 @@ const Login: React.FC = () => {
     }, [currentUser, navigate]);
 
     return (
-        <div className="min-h-screen bg-surface flex flex-col justify-center items-center p-4">
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100 text-center space-y-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-fuchsia-50 flex flex-col">
 
-                {/* Logo & Brand */}
-                <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-emerald-100">
-                        <span className="font-bold text-3xl text-white">V</span>
-                    </div>
-                    <h1 className="text-3xl font-bold text-slate-900">VeriPura</h1>
-                    <p className="text-slate-500 mt-2">Digital Product Passport on IOTA</p>
+            {/* Navbar / Header */}
+            <header className="p-6 flex justify-between items-center max-w-7xl mx-auto w-full">
+
+                <div className="flex items-center gap-3">
+                    <img
+                        src="/logo.png"
+                        alt="VeriPura Core Logo"
+                        className="h-10 w-auto hue-rotate-[290deg] saturate-200 invert-[.18] sepia-[.96] saturate-[46.45] brightness-[.97] contrast-[1.18]"
+                        style={{ filter: "invert(27%) sepia(51%) saturate(2878%) hue-rotate(275deg) brightness(104%) contrast(97%)" }}
+                    />
+                </div>
+            </header>
+
+            {/* Hero Section */}
+            <main className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-4xl mx-auto w-full">
+
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-fuchsia-100 text-fuchsia-700 rounded-full text-xs font-semibold uppercase tracking-wider mb-6">
+                    <Zap size={14} className="fill-current" />
+                    Powered by IOTA MoveVM
                 </div>
 
-                {/* Features Grid */}
-                <div className="grid grid-cols-2 gap-4 text-left">
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                        <Truck className="text-primary mb-2" size={24} />
-                        <h3 className="font-semibold text-slate-900 text-sm">Traceability</h3>
-                        <p className="text-xs text-slate-500">Track from farm to fork</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                        <Wallet className="text-primary mb-2" size={24} />
-                        <h3 className="font-semibold text-slate-900 text-sm">IOTA Wallet</h3>
-                        <p className="text-xs text-slate-500">Non-custodial identity</p>
-                    </div>
-                </div>
+                <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 mb-6 leading-tight">
+                    The Future of <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-600 to-purple-600">
+                        Demand-Driven Supply
+                    </span>
+                </h1>
 
-                {/* Login Button */}
-                <div className="space-y-4 pt-4 border-t border-slate-100">
+                <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+                    Orchestrate global trade with AI Guardians and on-chain settlement.
+                    From compliance to carbon, ensure every consignment is verified.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md mx-auto mb-16">
                     <button
                         onClick={handleLogin}
-                        className="w-full bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-700 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-fuchsia-200 flex items-center justify-center gap-3 group"
+                        className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-8 rounded-xl transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 flex items-center justify-center gap-3"
                     >
                         <img
                             src="https://www.google.com/favicon.ico"
@@ -61,15 +68,55 @@ const Login: React.FC = () => {
                             className="w-5 h-5 bg-white rounded-full p-0.5"
                         />
                         Sign in with Google
-                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                     </button>
-                    <p className="text-xs text-slate-400">
-                        Secure authentication powered by Firebase & IOTA
-                    </p>
+                    <button
+                        onClick={() => window.open('https://veripura.com', '_blank')}
+                        className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-bold py-4 px-8 rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-3"
+                    >
+                        Documentation
+                    </button>
                 </div>
-            </div>
+
+                {/* Features Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-left w-full">
+                    <FeatureCard
+                        icon={<FileCheck className="text-primary" size={24} />}
+                        title="Intelligent Document Validation"
+                        description="Real-time structural and regulatory analysis of every uploaded trade document."
+                    />
+                    <FeatureCard
+                        icon={<Bot className="text-emerald-500" size={24} />}
+                        title="Agentic Dossier Building"
+                        description="Autonomous agents compile, organize, and verify complete consignment dossiers."
+                    />
+                    <FeatureCard
+                        icon={<Wallet className="text-purple-500" size={24} />}
+                        title="Instant Settlement"
+                        description="Smart contracts trigger stablecoin payments upon confirmed delivery."
+                    />
+                    <FeatureCard
+                        icon={<Leaf className="text-green-500" size={24} />}
+                        title="Sustainability Verified"
+                        description="Carbon footprint calculation and deforestation-free verification."
+                    />
+                </div>
+            </main>
+
+            <footer className="p-6 text-center text-slate-400 text-sm border-t border-slate-100 mt-12 bg-white">
+                &copy; 2026 VeriPura&trade; Core | <span className="text-primary hover:underline cursor-pointer" onClick={() => navigate('/terms')}>Terms of Service</span> | <span className="text-primary">www.veripura.com</span>
+            </footer>
         </div>
     );
 };
+
+const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
+    <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+        <div className="mb-4 bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center border border-slate-100">
+            {icon}
+        </div>
+        <h3 className="font-bold text-slate-900 mb-2">{title}</h3>
+        <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
+    </div>
+);
 
 export default Login;

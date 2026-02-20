@@ -175,10 +175,32 @@ export interface KnowledgeRelationship {
   confidence: number;
 }
 
+export interface AgentEventPayload {
+  documentId?: string;
+  analysis?: Record<string, unknown>;
+  extractedFacts?: KnowledgeFact[];
+  product?: string;
+  hsCode?: string;
+  isOrganic?: boolean;
+  attributes?: any;
+  shipment?: {
+    origin?: string;
+    destination?: string;
+    product?: string;
+    hsCode?: string;
+    attributes?: any;
+  };
+  roadmap?: Record<string, unknown>;
+  message?: string;
+  newOrigin?: string;
+  newDestination?: string;
+  [key: string]: any;
+}
+
 export interface AgentEvent {
   id: string; // UID for event tracking
   type: 'DOCUMENT_UPLOAD' | 'HUMAN_DECISION' | 'ROUTE_UPDATE' | 'USER_MESSAGE' | 'IOT_UPDATE';
-  payload: any;
+  payload: AgentEventPayload;
   timestamp?: string;
 }
 

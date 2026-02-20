@@ -33,3 +33,18 @@
 * [x] Design `RegulatoryWatcher` sub-agent pattern (Cron + Scraper).
 * [x] **Data Source Integration**: Implement **Bright Data MCP** for robust scraping.
 * [x] Implement "Rule Update Proposal" workflow in Admin UI.
+
+## 6. Branding & UI Fixes
+
+* [x] Rename App to VeriPura Core
+* [x] Fix Dashboard sidebar link
+
+## 7. Login Page Redesign
+
+* [x] Transform Login page into Landing Page
+* [x] Add Value Props & Feature Highlights
+
+## 8. Brand Refresh
+
+* [x] Integrate new Logo
+* [x] Update Theme Colors to match Logo (Green/Yellow)

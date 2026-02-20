@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, History, Settings, UserCircle, Menu, X, LogOut, Briefcase, ShieldAlert, Database, Laptop, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, FileText, History, Settings, UserCircle, Menu, X, LogOut, Briefcase, ShieldAlert, Database, Laptop, Sun, Moon, PlusCircle } from 'lucide-react';
 import { UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -21,9 +21,10 @@ const Layout: React.FC<LayoutProps> = ({ children, userRole, setUserRole }) => {
   const isAdmin = currentUser?.email === 'onno@veripura.com';
 
   const navItems = [
-    { name: 'Dashboard', path: '/register-consignment', icon: <LayoutDashboard size={20} /> },
+    { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
+    { name: 'New Consignment', path: '/register-consignment', icon: <PlusCircle size={20} /> },
     { name: 'Consignments', path: '/consignments', icon: <FileText size={20} /> },
-    { name: 'Export Assessment', path: '/compliance/assessment', icon: <ShieldAlert size={20} /> },
+
     { name: 'Review Hub', path: '/admin-review', icon: <ShieldAlert size={20} />, adminOnly: true },
     { name: 'Data Export', path: '/admin/export', icon: <Database size={20} />, adminOnly: true },
     { name: 'History', path: '/supply-chain', icon: <History size={20} /> },
@@ -37,11 +38,14 @@ const Layout: React.FC<LayoutProps> = ({ children, userRole, setUserRole }) => {
       {/* Sidebar (Desktop) */}
       <aside className="hidden md:flex flex-col w-64 bg-sidebar border-r border-slate-100 dark:border-slate-800 p-6 sticky top-0 h-screen shadow-sm z-10 transition-colors duration-200">
         <div className="flex items-center gap-3 mb-12">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-glow">
-            <Briefcase size={20} />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg leading-tight text-slate-900 dark:text-white">VeriPura</h1>
+          <img
+            src="/logo.png"
+            alt="VeriPura Core"
+            className="w-28 h-auto object-contain"
+            style={{ filter: "invert(27%) sepia(51%) saturate(2878%) hue-rotate(275deg) brightness(104%) contrast(97%)" }}
+          />
+          <div className="sr-only">
+            <h1 className="font-bold text-lg leading-tight text-slate-900 dark:text-white">VeriPura Core <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full ml-1 align-middle">ALPHA</span></h1>
             <p className="text-[10px] font-bold text-primary uppercase tracking-wider">Export Assessment</p>
           </div>
         </div>
@@ -118,7 +122,7 @@ const Layout: React.FC<LayoutProps> = ({ children, userRole, setUserRole }) => {
       <main className="flex-1 p-6 md:p-10 overflow-y-auto bg-surface transition-colors duration-200">
         {children}
         <footer className="mt-12 text-center text-xs text-slate-400">
-          &copy; 2026 VeriPura&trade; | <span className="text-primary">www.veripura.com</span>
+          &copy; 2026 VeriPura&trade; Core | <span className="text-primary hover:underline cursor-pointer" onClick={() => navigate('/terms')}>Terms of Service</span> | <span className="text-primary">www.veripura.com</span>
         </footer>
       </main>
     </div>

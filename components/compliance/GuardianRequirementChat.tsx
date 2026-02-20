@@ -5,6 +5,7 @@ import { complianceService } from '../../services/complianceService';
 
 interface GuardianRequirementChatProps {
     onAddRule: (name: string, category: ChecklistItemCategory) => void;
+    onRemoveRule: (name: string) => void;
 }
 
 interface Message {
@@ -24,7 +25,7 @@ const PRESET_CHIPS = [
     { label: 'Lab Analysis', category: ChecklistItemCategory.FOOD_SAFETY },
 ];
 
-export const GuardianRequirementChat: React.FC<GuardianRequirementChatProps> = ({ onAddRule }) => {
+export const GuardianRequirementChat: React.FC<GuardianRequirementChatProps> = ({ onAddRule, onRemoveRule }) => {
     const [messages, setMessages] = useState<Message[]>([
         {
             id: 'welcome',
@@ -65,69 +66,69 @@ export const GuardianRequirementChat: React.FC<GuardianRequirementChatProps> = (
         }, 800);
     };
 
-    const processUserRequest = (text: string) => {
-        // Simple NLP / Heuristic for MVP
-        const lowerText = text.toLowerCase();
-        let docName = '';
-        let category = ChecklistItemCategory.REGULATORY;
+    const processUserRequest = async (text: string) => {
+        setIsTyping(true);
+        try {
+            // 1. Analyze Intent via AI
+            // In a real app, this is an async call to Gemini
+            // For this demo, we might fall back to the heuristic if the API fails or is not mocked in the prompt
+            // But let's assume we use the new service
+            const intent = await import('../../services/geminiService').then(m => m.analyzeGuardianIntent(text));
 
-        // Detection Logic
-        if (lowerText.includes('organic') || lowerText.includes('bio')) {
-            docName = 'Organic Certificate';
-            category = ChecklistItemCategory.CERTIFICATIONS;
-        } else if (lowerText.includes('halal')) {
-            docName = 'Halal Certificate';
-            category = ChecklistItemCategory.CERTIFICATIONS;
-        } else if (lowerText.includes('kosher')) {
-            docName = 'Kosher Certificate';
-            category = ChecklistItemCategory.CERTIFICATIONS;
-        } else if (lowerText.includes('origin')) {
-            docName = 'Certificate of Origin';
-            category = ChecklistItemCategory.REGULATORY;
-        } else if (lowerText.includes('phyto')) {
-            docName = 'Phytosanitary Certificate';
-            category = ChecklistItemCategory.REGULATORY;
-        } else if (lowerText.includes('health')) {
-            docName = 'Health Certificate';
-            category = ChecklistItemCategory.REGULATORY;
-        } else if (lowerText.includes('haccp') || lowerText.includes('iso')) {
-            docName = 'ISO 22000 / HACCP';
-            category = ChecklistItemCategory.FOOD_SAFETY;
-        } else if (lowerText.includes('add ')) {
-            // Fallback: Use whatever user typed after "add"
-            docName = text.replace(/add /i, '').trim();
-            // Try to guess category or default
-            category = ChecklistItemCategory.REGULATORY;
-        } else {
-            // Unclear intent
+            if (intent.action === 'ADD_REQUIREMENT' && intent.docName && intent.category) {
+                const docName = intent.docName;
+                // Cast string category to Enum if possible, else default
+                const categoryEnum = Object.values(ChecklistItemCategory).includes(intent.category as any)
+                    ? intent.category as ChecklistItemCategory
+                    : ChecklistItemCategory.REGULATORY;
+
+                const agentId = complianceService.getResponsibleAgent(docName, categoryEnum);
+                const { getAgentPersona } = await import('./AgentPersonas');
+                const persona = getAgentPersona(agentId);
+
+                onAddRule(docName, categoryEnum);
+
+                // 4. Guardian Response using Persona
+                const responseText = `**${persona.greeting}** <br/>Request for **${docName}** acknowledged. Added to roadmap.`;
+
+                setIsTyping(false);
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    text: responseText,
+                    sender: 'guardian',
+                    timestamp: Date.now(),
+                    agentName: agentId
+                }]);
+            } else if (intent.action === 'REMOVE_REQUIREMENT' && intent.docName) {
+                // Handle Removal
+                onRemoveRule(intent.docName);
+                setIsTyping(false);
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    text: `Request to remove **${intent.docName}** acknowledged. Requirement revoked.`,
+                    sender: 'guardian',
+                    timestamp: Date.now(),
+                    agentName: 'Guardian Orchestrator'
+                }]);
+            } else {
+                // Fallback / Unknown
+                setIsTyping(false);
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    text: "I'm analyzing that request... Could you specify the exact document type?",
+                    sender: 'guardian',
+                    timestamp: Date.now(),
+                    agentName: 'Guardian Orchestrator'
+                }]);
+            }
+        } catch (e) {
+            console.error(e);
             setIsTyping(false);
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
-                text: "I didn't quite catch the document name. Try saying 'Add [Document Name]'.",
+                text: "I am having trouble connecting to the Agent Network (AI Service Error).",
                 sender: 'guardian',
                 timestamp: Date.now()
-            }]);
-            return;
-        }
-
-        // 3. Execute Action
-        if (docName) {
-            // capitalize first letter
-            docName = docName.charAt(0).toUpperCase() + docName.slice(1);
-
-            const agent = complianceService.getResponsibleAgent(docName, category);
-            onAddRule(docName, category);
-
-            // 4. Guardian Response
-            const responseText = `Understood. I have tasked the **${agent}** to track the **${docName}**.`;
-
-            setIsTyping(false);
-            setMessages(prev => [...prev, {
-                id: Date.now().toString(),
-                text: responseText,
-                sender: 'guardian',
-                timestamp: Date.now(),
-                agentName: 'Orchestrator'
             }]);
         }
     };
@@ -164,8 +165,8 @@ export const GuardianRequirementChat: React.FC<GuardianRequirementChatProps> = (
                         </div>
 
                         <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${msg.sender === 'user'
-                                ? 'bg-slate-200 text-slate-800 rounded-tr-none'
-                                : 'bg-white border border-slate-100 text-slate-700 shadow-sm rounded-tl-none'
+                            ? 'bg-slate-200 text-slate-800 rounded-tr-none'
+                            : 'bg-white border border-slate-100 text-slate-700 shadow-sm rounded-tl-none'
                             }`}>
                             {msg.agentName && (
                                 <span className="block text-xs font-bold text-fuchsia-700 mb-1">

@@ -35,6 +35,13 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+        'fs/promises': path.resolve(__dirname, 'empty.js'),
+        'fs': path.resolve(__dirname, 'empty.js'),
+        'path': path.resolve(__dirname, 'empty.js'),
+        'os': path.resolve(__dirname, 'empty.js'),
+        'child_process': path.resolve(__dirname, 'empty.js'),
+        'stream': path.resolve(__dirname, 'empty.js'),
+        'crypto': path.resolve(__dirname, 'empty.js')
       }
     }
   };

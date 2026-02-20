@@ -330,7 +330,7 @@ const RegisterConsignment: React.FC = () => {
             const assessment = await agentService.assessDocument(consignment.id, docType, analysisResult, {
                 ...consignment,
                 roadmap: uploadResult.updates.roadmap
-            });
+            }, file);
             console.log("Step 3 Complete.");
 
             // 4. ATOMIC UPDATE: Single write to Firestore
@@ -1091,6 +1091,25 @@ const RegisterConsignment: React.FC = () => {
                         consignmentService.updateConsignment(consignment.id, { roadmap: updatedMap });
                     }
                 }}
+                onRemoveRule={(name) => {
+                    const available = consignment?.roadmap || {};
+                    // Create a copy to avoid direct mutation (though spread does shallow copy)
+                    const updatedMap = { ...available };
+
+                    // Simple fuzzy delete if exact match fails
+                    if (updatedMap[name]) {
+                        delete updatedMap[name];
+                    } else {
+                        // Try to find by partial match / loose equality if LLM returns different casing
+                        const key = Object.keys(updatedMap).find(k => k.toLowerCase() === name.toLowerCase());
+                        if (key) delete updatedMap[key];
+                    }
+
+                    setConsignment({ ...consignment, roadmap: updatedMap } as Consignment);
+                    if (consignment?.id) {
+                        consignmentService.updateConsignment(consignment.id, { roadmap: updatedMap });
+                    }
+                }}
             />
 
             {/* Route Mismatch Correction Modal */}
@@ -1301,14 +1320,7 @@ const RegisterConsignment: React.FC = () => {
                     </div>
                 )
             }
-            {/* Global Disclaimer Footer */}
-            <div className="mt-12 pt-6 border-t border-slate-200 text-center pb-8">
-                <p className="text-xs text-slate-400 font-medium">
-                    ⚠️ Disclaimer: AI-generated analysis. Verify with certified professionals before use.
-                    <br />
-                    VeriPura Connect provides compliance assistance but does not replace legal or regulatory advice.
-                </p>
-            </div>
+
 
             {/* Sub-Agent Real-time Notifications */}
             <SubAgentNotifier

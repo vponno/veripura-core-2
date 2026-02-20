@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides a comprehensive implementation plan for the **Guardian Agent Architecture** described in [`bizlogic.md`](file:///Users/onno/veripura-core-opencode/bizlogic.md). The current codebase has basic agent functionality, but we are moving towards a "One Consignment, One Agent" architecture with structured memory, skills, and RAG capabilities.
+This document provides a comprehensive implementation plan for the **Guardian Agent Architecture** described in [`bizlogic.md`](file:///Users/onno/veripura-core-final/bizlogic.md). The current codebase has basic agent functionality, but we are moving towards a "One Consignment, One Agent" architecture with structured memory, skills, and RAG capabilities.
 
 **Important:** This implementation is designed to be **non-breaking**. The existing codebase will continue working while the new Guardian Agent system is added alongside it.
 
@@ -78,7 +78,7 @@ graph TD
 
 ### 3.1 Enhanced Consignment with Agent State
 
-We use the updated definitions in [`types.ts`](file:///Users/onno/veripura-core-opencode-guardian-agent/types.ts):
+We use the updated definitions in [`types.ts`](file:///Users/onno/veripura-core-final/types.ts):
 
 * **`AgentState`**: Manages memory, skills, sub-agents, and session history.
 * **`AgentMemory`**: Contains short-term context (thoughts, pending decisions) and long-term Knowledge Graph (facts, relationships).
@@ -124,7 +124,7 @@ private calculateContextConfidence(cases: SimilarCase[], regulations: Regulation
 
 ### 5.2 Firestore Rules Update
 
-Update [`firestore.rules`](file:///Users/onno/veripura-core-opencode/firestore.rules) to secure agent data:
+Update [`firestore.rules`](file:///Users/onno/veripura-core-final/firestore.rules) to secure agent data:
 
 ```javascript
 match /consignments/{consignmentId} {
@@ -142,7 +142,7 @@ match /consignments/{consignmentId} {
 
 ### 6.1 Consignment Creation (Guardian Agent Spawn)
 
-Modify [`consignmentService.ts`](file:///Users/onno/veripura-core-opencode/services/consignmentService.ts):
+Modify [`consignmentService.ts`](file:///Users/onno/veripura-core-final/services/consignmentService.ts):
 
 ```typescript
 // 1. Spawn Guardian Agent (NEW)

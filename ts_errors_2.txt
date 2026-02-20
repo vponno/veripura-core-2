@@ -1,0 +1,46 @@
+services/agent/skills/adrImdgCompliance.ts(27,14): error TS2420: Class 'ADRIMDGComplianceSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'ADRIMDGComplianceSkill' but required in type 'ISkill<any>'.
+services/agent/skills/conflictResolution.ts(21,14): error TS2420: Class 'ConflictResolutionSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'ConflictResolutionSkill' but required in type 'ISkill<any>'.
+services/agent/skills/countryRisk.ts(24,14): error TS2420: Class 'CountryRiskSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'CountryRiskSkill' but required in type 'ISkill<any>'.
+services/agent/skills/creditRisk.ts(23,14): error TS2420: Class 'CreditRiskSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'CreditRiskSkill' but required in type 'ISkill<any>'.
+services/agent/skills/digitalProductPassport.ts(18,14): error TS2420: Class 'DigitalProductPassportSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'DigitalProductPassportSkill' but required in type 'ISkill<any>'.
+services/agent/skills/esgScore.ts(25,14): error TS2420: Class 'ESGScoreSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'ESGScoreSkill' but required in type 'ISkill<any>'.
+services/agent/skills/ethicalAudit.ts(14,14): error TS2420: Class 'EthicalAuditSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'EthicalAuditSkill' but required in type 'ISkill<any>'.
+services/agent/skills/foodSafetyAudit.ts(15,14): error TS2420: Class 'FoodSafetyAuditSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'FoodSafetyAuditSkill' but required in type 'ISkill<any>'.
+services/agent/skills/ingredientAnalysis.ts(3,14): error TS2420: Class 'IngredientAnalysisSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'IngredientAnalysisSkill' but required in type 'ISkill<any>'.
+services/agent/skills/insuranceValidation.ts(22,14): error TS2420: Class 'InsuranceValidationSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'InsuranceValidationSkill' but required in type 'ISkill<any>'.
+services/agent/skills/iotaAnchor.ts(4,14): error TS2420: Class 'IotaAnchorSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'IotaAnchorSkill' but required in type 'ISkill<any>'.
+services/agent/skills/labelingCompliance.ts(3,14): error TS2420: Class 'LabelingComplianceSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'LabelingComplianceSkill' but required in type 'ISkill<any>'.
+services/agent/skills/labResultValidation.ts(36,14): error TS2420: Class 'LabResultValidationSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'LabResultValidationSkill' but required in type 'ISkill<any>'.
+services/agent/skills/pharmaCompliance.ts(30,14): error TS2420: Class 'PharmaComplianceSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'PharmaComplianceSkill' but required in type 'ISkill<any>'.
+services/agent/skills/recallMonitor.ts(33,14): error TS2420: Class 'RecallMonitorSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'RecallMonitorSkill' but required in type 'ISkill<any>'.
+services/agent/skills/reliabilityFallback.ts(27,14): error TS2420: Class 'ReliabilityFallbackSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'ReliabilityFallbackSkill' but required in type 'ISkill<any>'.
+services/agent/skills/religiousCompliance.ts(3,14): error TS2420: Class 'ReligiousComplianceSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'ReligiousComplianceSkill' but required in type 'ISkill<any>'.
+services/agent/skills/riskDatabase.ts(3,14): error TS2420: Class 'RiskDatabaseSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'RiskDatabaseSkill' but required in type 'ISkill<any>'.
+services/agent/skills/skillChaining.ts(26,14): error TS2420: Class 'SkillChainingSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'SkillChainingSkill' but required in type 'ISkill<any>'.
+services/agent/skills/skillTelemetry.ts(26,14): error TS2420: Class 'SkillTelemetrySkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'SkillTelemetrySkill' but required in type 'ISkill<any>'.
+services/agent/skills/skillVersionManager.ts(18,14): error TS2420: Class 'SkillVersionManager' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'SkillVersionManager' but required in type 'ISkill<any>'.
+services/agent/skills/tariffOptimizer.ts(21,14): error TS2420: Class 'TariffOptimizerSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'TariffOptimizerSkill' but required in type 'ISkill<any>'.
+services/agent/skills/watchlistScent.ts(3,14): error TS2420: Class 'WatchlistScentSkill' incorrectly implements interface 'ISkill<any>'.
+  Property 'category' is missing in type 'WatchlistScentSkill' but required in type 'ISkill<any>'.

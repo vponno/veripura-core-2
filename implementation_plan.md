@@ -16,11 +16,11 @@ We will create the `AgentCore` (the orchestrator) and the `SkillRegistry` (the c
 
 We will create a dedicated domain for the agent logic to avoid cluttering the generic `services` folder.
 
-#### [NEW] [types.ts](file:///Users/onno/veripura-core-opencode/services/agent/types.ts)
+#### [NEW] [types.ts](file:///Users/onno/veripura-core-final/services/agent/types.ts)
 
 Definitions for `AgentContext`, `AgentMemory`, and the `AgentSkill` interface.
 
-#### [NEW] [AgentCore.ts](file:///Users/onno/veripura-core-opencode/services/agent/AgentCore.ts)
+#### [NEW] [AgentCore.ts](file:///Users/onno/veripura-core-final/services/agent/AgentCore.ts)
 
 The main class that:
 
@@ -28,7 +28,7 @@ The main class that:
 2. **Orchestrates**: Selects and executes skills.
 3. **Memories**: Updates the `structuredMemory` (Knowledge Graph).
 
-#### [NEW] [SkillRegistry.ts](file:///Users/onno/veripura-core-opencode/services/agent/SkillRegistry.ts)
+#### [NEW] [SkillRegistry.ts](file:///Users/onno/veripura-core-final/services/agent/SkillRegistry.ts)
 
 A singleton registry to manage available skills.
 
@@ -36,19 +36,19 @@ A singleton registry to manage available skills.
 
 We will gradually move logic *out* of huge service files and *into* specific skills.
 
-#### [NEW] [skills/ForensicSkill.ts](file:///Users/onno/veripura-core-opencode/services/agent/skills/ForensicSkill.ts)
+#### [NEW] [skills/ForensicSkill.ts](file:///Users/onno/veripura-core-final/services/agent/skills/ForensicSkill.ts)
 
 * **Source**: Extract validation logic from `validationService.ts`.
 * **Role**: Handles the "Tamper Score" and document analysis.
 
-#### [NEW] [skills/RegulatorySkill.ts](file:///Users/onno/veripura-core-opencode/services/agent/skills/RegulatorySkill.ts)
+#### [NEW] [skills/RegulatorySkill.ts](file:///Users/onno/veripura-core-final/services/agent/skills/RegulatorySkill.ts)
 
 * **Source**: Extract rule checking from `complianceService.ts`.
 * **Role**: Handles BigQuery lookups and Rule Checks.
 
 ### 3. Cleanup
 
-#### [MODIFY] [consignmentService.ts](file:///Users/onno/veripura-core-opencode/services/consignmentService.ts)
+#### [MODIFY] [consignmentService.ts](file:///Users/onno/veripura-core-final/services/consignmentService.ts)
 
 1. **Remove** direct validation calls.
 2. **Replace** with `await AgentCore.wakeUp(consignmentId).processEvent('DOCUMENT_UPLOAD', { file })`.

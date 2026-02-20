@@ -1,0 +1,245 @@
+services/agent/skills/adrImdgCompliance.ts(40,11): error TS2416: Property 'execute' in type 'ADRIMDGComplianceSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: ADRIMDGInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'ADRIMDGInput': unNumber, properShippingName, hazardClass, quantity, and 2 more.
+services/agent/skills/adrImdgCompliance.ts(98,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/conflictResolution.ts(44,11): error TS2416: Property 'execute' in type 'ConflictResolutionSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: ConflictResolutionInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'ConflictResolutionInput': results, context
+services/agent/skills/conflictResolution.ts(50,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/conflictResolution.ts(62,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/conflictResolution.ts(73,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/conflictResolution.ts(96,41): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/skills/conflictResolution.ts(97,41): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/skills/conflictResolution.ts(106,75): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/skills/conflictResolution.ts(107,75): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/skills/conflictResolution.ts(119,75): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/skills/conflictResolution.ts(120,75): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/skills/countryRisk.ts(38,11): error TS2416: Property 'execute' in type 'CountryRiskSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: CountryRiskInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Property 'country' is missing in type 'SkillContext' but required in type 'CountryRiskInput'.
+services/agent/skills/countryRisk.ts(76,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/creditRisk.ts(34,11): error TS2416: Property 'execute' in type 'CreditRiskSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: CreditRiskInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'CreditRiskInput': supplierId, supplierName, country
+services/agent/skills/creditRisk.ts(68,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/digitalProductPassport.ts(31,11): error TS2416: Property 'execute' in type 'DigitalProductPassportSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: DigitalProductPassportInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'DigitalProductPassportInput': productId, productCategory
+services/agent/skills/digitalProductPassport.ts(68,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/esgScore.ts(36,11): error TS2416: Property 'execute' in type 'ESGScoreSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: ESGScoreInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'ESGScoreInput': supplierId, supplierName
+services/agent/skills/esgScore.ts(75,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/ethicalAudit.ts(19,11): error TS2416: Property 'execute' in type 'EthicalAuditSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: EthicalAuditInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Property 'standard' is missing in type 'SkillContext' but required in type 'EthicalAuditInput'.
+services/agent/skills/ethicalAudit.ts(27,21): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/ethicalAudit.ts(38,21): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/ethicalAudit.ts(52,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/ethicalAudit.ts(64,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/foodSafetyAudit.ts(20,11): error TS2416: Property 'execute' in type 'FoodSafetyAuditSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: FoodSafetyAuditInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Property 'standard' is missing in type 'SkillContext' but required in type 'FoodSafetyAuditInput'.
+services/agent/skills/foodSafetyAudit.ts(28,21): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/foodSafetyAudit.ts(39,21): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/foodSafetyAudit.ts(50,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/foodSafetyAudit.ts(64,21): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/foodSafetyAudit.ts(75,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/foodSafetyAudit.ts(88,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/foodSafetyAudit.ts(100,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/ingredientAnalysis.ts(3,14): error TS2420: Class 'IngredientAnalysisSkill' incorrectly implements interface 'ISkill'.
+  Property 'category' is missing in type 'IngredientAnalysisSkill' but required in type 'ISkill'.
+services/agent/skills/ingredientAnalysis.ts(27,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/ingredientAnalysis.ts(34,33): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/insuranceValidation.ts(36,11): error TS2416: Property 'execute' in type 'InsuranceValidationSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: InsuranceValidationInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'InsuranceValidationInput': cargoValue, commodity, origin, destination, transportMode
+services/agent/skills/insuranceValidation.ts(47,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/insuranceValidation.ts(100,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/iotaAnchor.ts(9,11): error TS2416: Property 'execute' in type 'IotaAnchorSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: { documentHash: string; metadata?: any; }) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Property 'documentHash' is missing in type 'SkillContext' but required in type '{ documentHash: string; metadata?: any; }'.
+services/agent/skills/iotaAnchor.ts(14,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/labelingCompliance.ts(3,14): error TS2420: Class 'LabelingComplianceSkill' incorrectly implements interface 'ISkill'.
+  Property 'category' is missing in type 'LabelingComplianceSkill' but required in type 'ISkill'.
+services/agent/skills/labelingCompliance.ts(25,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/labelingCompliance.ts(32,33): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/labResultValidation.ts(41,11): error TS2416: Property 'execute' in type 'LabResultValidationSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: LabResultValidationInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'LabResultValidationInput': certificateOfAnalysis, productSpec
+services/agent/skills/labResultValidation.ts(107,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/pharmaCompliance.ts(47,11): error TS2416: Property 'execute' in type 'PharmaComplianceSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: PharmaComplianceInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'PharmaComplianceInput': productName, productType, storageTemp, manufacturer, transport
+services/agent/skills/pharmaCompliance.ts(104,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/recallMonitor.ts(77,11): error TS2416: Property 'execute' in type 'RecallMonitorSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: RecallMonitorInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'RecallMonitorInput': product, shipment
+services/agent/skills/recallMonitor.ts(109,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/reliabilityFallback.ts(40,11): error TS2416: Property 'execute' in type 'ReliabilityFallbackSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: ReliabilityFallbackInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'ReliabilityFallbackInput': action, skillId
+services/agent/skills/reliabilityFallback.ts(53,21): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/reliabilityFallback.ts(108,26): error TS2739: Type '{ success: true; status: string; message: string; score: number; data: { method: string; originalError: string; }; }' is missing the following properties from type 'SkillResult': confidence, requiresHumanReview, auditLog
+services/agent/skills/reliabilityFallback.ts(115,26): error TS2739: Type '{ success: true; status: string; message: string; score: number; data: { method: string; cachedData: any; originalError: string; }; }' is missing the following properties from type 'SkillResult': confidence, requiresHumanReview, auditLog
+services/agent/skills/reliabilityFallback.ts(122,28): error TS2739: Type '{ success: true; status: string; message: string; score: number; data: { method: string; originalError: string; }; }' is missing the following properties from type 'SkillResult': confidence, requiresHumanReview, auditLog
+services/agent/skills/reliabilityFallback.ts(129,25): error TS2739: Type '{ success: false; status: string; message: string; score: number; data: { method: string; originalError: string; }; }' is missing the following properties from type 'SkillResult': confidence, requiresHumanReview, auditLog
+services/agent/skills/reliabilityFallback.ts(199,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/reliabilityFallback.ts(208,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/reliabilityFallback.ts(227,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/religiousCompliance.ts(3,14): error TS2420: Class 'ReligiousComplianceSkill' incorrectly implements interface 'ISkill'.
+  Property 'category' is missing in type 'ReligiousComplianceSkill' but required in type 'ISkill'.
+services/agent/skills/religiousCompliance.ts(14,41): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/religiousCompliance.ts(16,37): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/religiousCompliance.ts(22,41): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/religiousCompliance.ts(24,37): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/religiousCompliance.ts(27,34): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/riskDatabase.ts(3,14): error TS2420: Class 'RiskDatabaseSkill' incorrectly implements interface 'ISkill'.
+  Property 'category' is missing in type 'RiskDatabaseSkill' but required in type 'ISkill'.
+services/agent/skills/riskDatabase.ts(26,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/riskDatabase.ts(33,34): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillChaining.ts(31,11): error TS2416: Property 'execute' in type 'SkillChainingSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: SkillChainingInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'SkillChainingInput': workflowName, startStep, steps, initialInput
+services/agent/skills/skillChaining.ts(45,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillChaining.ts(50,81): error TS2339: Property 'score' does not exist on type 'SkillResult'.
+services/agent/skills/skillChaining.ts(63,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillChaining.ts(122,50): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillChaining.ts(123,43): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillChaining.ts(124,46): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillChaining.ts(125,46): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillChaining.ts(128,59): error TS2322: Type 'SkillResult | { success: true; status: string; message: string; score: number; data: {}; }' is not assignable to type 'SkillResult'.
+  Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillChaining.ts(136,49): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/skills/skillChaining.ts(138,50): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/skills/skillChaining.ts(140,31): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/skills/skillHelper.ts(40,20): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/skills/skillLearning.ts(86,58): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/skills/skillLearning.ts(219,20): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/skills/skillTelemetry.ts(33,11): error TS2416: Property 'execute' in type 'SkillTelemetrySkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: SkillTelemetryInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Property 'action' is missing in type 'SkillContext' but required in type 'SkillTelemetryInput'.
+services/agent/skills/skillTelemetry.ts(41,25): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillTelemetry.ts(49,21): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillTelemetry.ts(59,21): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillTelemetry.ts(69,21): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillTelemetry.ts(78,21): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillVersionManager.ts(25,11): error TS2416: Property 'execute' in type 'SkillVersionManager' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: SkillVersionManagerInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'SkillVersionManagerInput': action, skillId
+services/agent/skills/skillVersionManager.ts(40,21): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillVersionManager.ts(51,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillVersionManager.ts(61,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillVersionManager.ts(71,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillVersionManager.ts(85,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillVersionManager.ts(97,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillVersionManager.ts(122,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillVersionManager.ts(141,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillVersionManager.ts(150,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillVersionManager.ts(163,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/skillVersionManager.ts(184,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/tariffOptimizer.ts(58,11): error TS2416: Property 'execute' in type 'TariffOptimizerSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: TariffOptimizerInput) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Type 'SkillContext' is missing the following properties from type 'TariffOptimizerInput': product, hsCode, origin, destination
+services/agent/skills/tariffOptimizer.ts(73,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/tariffOptimizer.ts(90,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/tariffOptimizer.ts(103,13): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/watchlistScent.ts(8,11): error TS2416: Property 'execute' in type 'WatchlistScentSkill' is not assignable to the same property in base type 'ISkill'.
+  Type '(input: { text: string; }) => Promise<SkillResult>' is not assignable to type '(context: SkillContext) => Promise<SkillResult>'.
+    Types of parameters 'input' and 'context' are incompatible.
+      Property 'text' is missing in type 'SkillContext' but required in type '{ text: string; }'.
+services/agent/skills/watchlistScent.ts(26,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/skills/watchlistScent.ts(35,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'SkillResult'.
+services/agent/subagents/bioSecurityBorderGuard.ts(37,21): error TS2353: Object literal may only specify known properties, and 'domain' does not exist in type 'SkillContext'.
+services/agent/subagents/bioSecurityBorderGuard.ts(41,35): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/bioSecurityBorderGuard.ts(43,28): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/brcgsSpecialist.ts(46,25): error TS2353: Object literal may only specify known properties, and 'standard' does not exist in type 'SkillContext'.
+services/agent/subagents/brcgsSpecialist.ts(50,47): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/brcgsSpecialist.ts(52,36): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/brcgsSpecialist.ts(54,50): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/brcgsSpecialist.ts(55,76): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/brcgsSpecialist.ts(70,25): error TS2353: Object literal may only specify known properties, and 'certName' does not exist in type 'SkillContext'.
+services/agent/subagents/brcgsSpecialist.ts(73,32): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/bsciAuditor.ts(43,25): error TS2353: Object literal may only specify known properties, and 'standard' does not exist in type 'SkillContext'.
+services/agent/subagents/bsciAuditor.ts(47,47): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/bsciAuditor.ts(49,36): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/carbonTracker.ts(36,25): error TS2353: Object literal may only specify known properties, and 'type' does not exist in type 'SkillContext'.
+services/agent/subagents/carbonTracker.ts(44,39): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/ethicalSourcingSpecialist.ts(43,29): error TS2353: Object literal may only specify known properties, and 'standard' does not exist in type 'SkillContext'.
+services/agent/subagents/ethicalSourcingSpecialist.ts(49,69): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/ethicalSourcingSpecialist.ts(51,36): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/ethicalSourcingSpecialist.ts(54,49): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/eudrSpecialist.ts(40,21): error TS2353: Object literal may only specify known properties, and 'regulation' does not exist in type 'SkillContext'.
+services/agent/subagents/eudrSpecialist.ts(48,35): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/eudrSpecialist.ts(50,28): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/eudrSpecialist.ts(53,41): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/eudrSpecialist.ts(56,35): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/foodSafetyAuditor.ts(42,29): error TS2353: Object literal may only specify known properties, and 'certName' does not exist in type 'SkillContext'.
+services/agent/subagents/foodSafetyAuditor.ts(46,69): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/foodSafetyAuditor.ts(46,117): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/foodSafetyAuditor.ts(48,36): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/foodSafetyAuditor.ts(51,49): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/foodSafetyAuditor.ts(54,43): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/foodSafetyAuditor.ts(57,49): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/fsmaSpecialist.ts(39,21): error TS2353: Object literal may only specify known properties, and 'regulation' does not exist in type 'SkillContext'.
+services/agent/subagents/fsmaSpecialist.ts(48,35): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/fsmaSpecialist.ts(50,28): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/fsmaSpecialist.ts(52,75): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/fsmaSpecialist.ts(60,35): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/fsmaSpecialist.ts(61,72): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/fssc22000Expert.ts(41,25): error TS2353: Object literal may only specify known properties, and 'standard' does not exist in type 'SkillContext'.
+services/agent/subagents/fssc22000Expert.ts(43,49): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/fssc22000Expert.ts(49,66): error TS2353: Object literal may only specify known properties, and 'certName' does not exist in type 'SkillContext'.
+services/agent/subagents/fssc22000Expert.ts(50,36): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/fssc22000Expert.ts(51,66): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/haccpSpecialist.ts(43,25): error TS2353: Object literal may only specify known properties, and 'standard' does not exist in type 'SkillContext'.
+services/agent/subagents/haccpSpecialist.ts(47,50): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/haccpSpecialist.ts(49,36): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/haccpSpecialist.ts(52,49): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/halalKosherGuardian.ts(40,65): error TS2353: Object literal may only specify known properties, and 'type' does not exist in type 'SkillContext'.
+services/agent/subagents/halalKosherGuardian.ts(41,56): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/halalKosherGuardian.ts(42,36): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/halalKosherGuardian.ts(42,109): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/halalKosherGuardian.ts(50,65): error TS2353: Object literal may only specify known properties, and 'type' does not exist in type 'SkillContext'.
+services/agent/subagents/halalKosherGuardian.ts(51,57): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/halalKosherGuardian.ts(52,36): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/halalKosherGuardian.ts(52,109): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/ingredientCryptographer.ts(35,25): error TS2353: Object literal may only specify known properties, and 'ingredients' does not exist in type 'SkillContext'.
+services/agent/subagents/ingredientCryptographer.ts(39,39): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/ingredientCryptographer.ts(41,32): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/ingredientCryptographer.ts(44,45): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/labelingInspector.ts(35,25): error TS2353: Object literal may only specify known properties, and 'labelText' does not exist in type 'SkillContext'.
+services/agent/subagents/labelingInspector.ts(39,39): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/labelingInspector.ts(41,32): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/labelingInspector.ts(44,45): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/livingWageValidator.ts(36,25): error TS2353: Object literal may only specify known properties, and 'type' does not exist in type 'SkillContext'.
+services/agent/subagents/livingWageValidator.ts(43,39): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/livingWageValidator.ts(45,32): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/livingWageValidator.ts(48,45): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/logisticsLingoInterpreter.ts(34,25): error TS2353: Object literal may only specify known properties, and 'mode' does not exist in type 'SkillContext'.
+services/agent/subagents/logisticsLingoInterpreter.ts(38,39): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/logisticsLingoInterpreter.ts(40,32): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/priceParityAgent.ts(35,25): error TS2353: Object literal may only specify known properties, and 'type' does not exist in type 'SkillContext'.
+services/agent/subagents/priceParityAgent.ts(42,39): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/priceParityAgent.ts(44,32): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/priceParityAgent.ts(47,45): error TS2339: Property 'message' does not exist on type 'SkillResult'.
+services/agent/subagents/priceParityAgent.ts(50,39): error TS2339: Property 'status' does not exist on type 'SkillResult'.
+services/agent/subagents/priceParityAgent.ts(53,45): error TS2339: Property 'message' does not exist on type 'SkillResult'.

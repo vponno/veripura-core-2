@@ -1,7 +1,7 @@
 
 import { ISkill, SkillCategory, SkillContext, SkillResult } from '../../types';
 // @ts-ignore - LlamaIndex exports can be tricky, ignoring check for now to allow build
-import { LlamaParseReader } from '@llamaindex/cloud/reader';
+import { LlamaParseReader } from 'llama-cloud-services';
 
 export class DocumentGuardSkill implements ISkill {
     public id = 'document_guard_skill';

@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Consignments from './pages/Consignments';
 import SupplyChain from './pages/SupplyChain';
+import TermsOfService from './pages/TermsOfService';
 import AIInsights from './pages/AIInsights';
 import AuthDebug from './pages/AuthDebug';
 import WalletBackup from './pages/WalletBackup';
@@ -68,10 +69,11 @@ const App: React.FC = () => {
                 <RequireAuth>
                   <Layout userRole={userRole} setUserRole={setUserRole}>
                     <Routes>
-                      <Route path="/dashboard" element={<Dashboard userRole={userRole} />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/create-contract" element={<CreateContract />} />
                       <Route path="/consignments" element={<Consignments />} />
                       <Route path="/supply-chain" element={<SupplyChain />} />
+                      <Route path="/terms" element={<TermsOfService />} />
                       <Route path="/insights" element={<AIInsights />} />
                       <Route path="/wallet" element={<AuthDebug />} />
                       <Route path="/backup-wallet" element={<WalletBackup />} />

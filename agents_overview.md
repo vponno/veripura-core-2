@@ -115,11 +115,12 @@ This document lists the specialized agents within the VeriPura Core system, thei
 ### Organic Sentinel
 
 * **ID:** `organic_sentinel`
-* **Role:** Organic certification guardian.
-* **Capabilities:**
-  * Verifies Transaction Certificates (TC).
-  * Checks equivalence arrangements (e.g., NOP vs. EU Organic).
-* **Activation:** Organic products.
+* **Role:** Validates organic certifications and equivalency arrangements.
+* **Key Functions:**
+  * **Global Standard Validation:** Supports USDA NOP, EU Organic, JAS (Japan), COR (Canada), China Organic, Korea Organic (MAFRA), ACO (Australia), OOAP (New Zealand), and UK Organic.
+  * **Equivalency Checking:** Automatically handles trade arrangements (e.g., US-EU, US-Canada).
+  * **Certificate Verification:** Ensures provided certificates match destination requirements.
+* **Trigger:** Detection of "Organic" attribute in product metadata.
 
 ### Ethical Sourcing Specialist
 
@@ -249,6 +250,16 @@ This document lists the specialized agents within the VeriPura Core system, thei
   * Checks declared value against market averages to prevent transfer pricing fraud.
 * **Activation:** All shipments.
 
+### Document Reconciliation Specialist
+
+* **ID:** `document_reconciler`
+* **Role:** Integrity guardian for trade documentation.
+* **Capabilities:**
+  * Parses uploaded documents (PDFs, Images) using LlamaParse.
+  * Cross-references document contents with digital consignment data to flag inconsistencies (e.g., mismatching origin, quantity, or product description).
+  * **Skill:** `DocumentGuardSkill`.
+* **Activation:** Document Upload events.
+
 ## 6. Infrastructure Agents
 
 ### Bio Security Border Guard
@@ -294,8 +305,8 @@ This document lists the specialized agents within the VeriPura Core system, thei
 
 | Status | Planned Agent ID | Name | Maps to Skill | Description |
 | :---: | :--- | :--- | :--- | :--- |
-| ✅ | `skill_discovery_broker` | Skill Discovery Broker | `SkillDiscoverySkill` | Recommends best skill for vague requests |
-| ✅ | `confidence_ calibrator` | Confidence Calibrator | `SkillConfidenceSkill` | Scores output reliability |
+| ✅ IMPLEMENTED | `skill_discovery_broker` | Skill Discovery Broker | `SkillDiscoverySkill` | Recommends best skill for vague requests |
+| ✅ IMPLEMENTED | `confidence_calibrator` | Confidence Calibrator | `SkillConfidenceSkill` | Scores output reliability |
 | ✅ IMPLEMENTED | `workflow_orchestrator` | Workflow Orchestrator | `SkillChainingSkill` | Chains multi-agent workflows |
 
 ### 7.5 Specialized High-Risk Industry Agents

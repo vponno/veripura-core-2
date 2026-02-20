@@ -6,10 +6,10 @@ pkill -9 -f "node.*veripura" 2>/dev/null
 sleep 2
 
 # Change to the correct directory
-cd /Users/onno/veripura-core-opencode
+cd /Users/onno/veripura-core-final
 
 # Verify we're in the right place
-if [ "$PWD" != "/Users/onno/veripura-core-opencode" ]; then
+if [ "$PWD" != "/Users/onno/veripura-core-final" ]; then
     echo "ERROR: Failed to change to correct directory!"
     exit 1
 fi
