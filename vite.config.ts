@@ -35,13 +35,15 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
-        'fs/promises': path.resolve(__dirname, 'empty.js'),
-        'fs': path.resolve(__dirname, 'empty.js'),
-        'path': path.resolve(__dirname, 'empty.js'),
-        'os': path.resolve(__dirname, 'empty.js'),
-        'child_process': path.resolve(__dirname, 'empty.js'),
-        'stream': path.resolve(__dirname, 'empty.js'),
-        'crypto': path.resolve(__dirname, 'empty.js')
+        'fs': path.resolve(__dirname, 'fs-mock'),
+        'path': path.resolve(__dirname, 'fs-mock'),
+        'os': path.resolve(__dirname, 'fs-mock'),
+        'child_process': path.resolve(__dirname, 'fs-mock'),
+        'stream': path.resolve(__dirname, 'fs-mock'),
+        'crypto': path.resolve(__dirname, 'fs-mock'),
+        'url': path.resolve(__dirname, 'fs-mock'),
+        'https': path.resolve(__dirname, 'fs-mock'),
+        'http': path.resolve(__dirname, 'fs-mock')
       }
     }
   };

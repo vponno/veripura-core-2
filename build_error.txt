@@ -1,0 +1,34 @@
+
+> veripura-core-2@1.0.0 build
+> tsc && vite build
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+vite v5.4.21 building for production...
+transforming...
+✓ 2223 modules transformed.
+
+ ERROR  x Build failed in 2.00s
+
+
+ ERROR  error during build:
+node_modules/llama-cloud-services/reader/dist/index.js (6:7): "default" is not exported by "fs-mock/index.js", imported by "node_modules/llama-cloud-services/reader/dist/index.js".
+file: /Users/onno/veripura-core-final/node_modules/llama-cloud-services/reader/dist/index.js:6:7
+
+4: import '@llamaindex/core/global';
+5: import fs from 'fs';
+6: import path from 'path';
+          ^
+7: 
+8: var j = async (t, r)=>{
+
+    at getRollupError (file:///Users/onno/veripura-core-final/node_modules/rollup/dist/es/shared/parseAst.js:402:41)
+    at error (file:///Users/onno/veripura-core-final/node_modules/rollup/dist/es/shared/parseAst.js:398:42)
+    at Module.error (file:///Users/onno/veripura-core-final/node_modules/rollup/dist/es/shared/node-entry.js:17040:16)
+    at Module.traceVariable (file:///Users/onno/veripura-core-final/node_modules/rollup/dist/es/shared/node-entry.js:17452:29)
+    at ModuleScope.findVariable (file:///Users/onno/veripura-core-final/node_modules/rollup/dist/es/shared/node-entry.js:15070:39)
+    at FunctionScope.findVariable (file:///Users/onno/veripura-core-final/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+    at FunctionBodyScope.findVariable (file:///Users/onno/veripura-core-final/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+    at MemberExpression.bind (file:///Users/onno/veripura-core-final/node_modules/rollup/dist/es/shared/node-entry.js:7392:49)
+    at CallExpression.bind (file:///Users/onno/veripura-core-final/node_modules/rollup/dist/es/shared/node-entry.js:2829:23)
+    at CallExpression.bind (file:///Users/onno/veripura-core-final/node_modules/rollup/dist/es/shared/node-entry.js:12179:15)
+
