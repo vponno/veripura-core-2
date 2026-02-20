@@ -226,7 +226,7 @@ export class GeminiV3Engine implements AnalysisEngine {
     private ai: GoogleGenAI;
 
     constructor() {
-        this.ai = new GoogleGenAI({ apiKey: API_KEY || '' });
+        this.ai = new GoogleGenAI({ apiKey: API_KEY || 'MISSING_API_KEY_PREVENT_CRASH' });
     }
 
     async analyzeDocument(file: File, context?: { exportFrom: string, importTo: string }): Promise<any> {

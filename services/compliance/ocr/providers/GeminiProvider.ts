@@ -99,7 +99,7 @@ export class GeminiProvider implements DocumentAnalysisProvider {
         if (!apiKey) {
             console.error("API Key not found. Please set VITE_GEMINI_API_KEY.");
         }
-        this.ai = new GoogleGenAI({ apiKey: apiKey || 'MISSING_KEY' });
+        this.ai = new GoogleGenAI({ apiKey: apiKey || 'MISSING_API_KEY_PREVENT_CRASH' });
     }
 
     async analyze(fileBase64: string, mimeType: string, options: AnalysisOptions): Promise<AnalysisResult> {
