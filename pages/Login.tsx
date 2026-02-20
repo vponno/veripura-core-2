@@ -103,7 +103,12 @@ const Login: React.FC = () => {
             </main>
 
             <footer className="p-6 text-center text-slate-400 text-sm border-t border-slate-100 mt-12 bg-white">
-                &copy; 2026 VeriPura&trade; Core | <span className="text-primary hover:underline cursor-pointer" onClick={() => navigate('/terms')}>Terms of Service</span> | <span className="text-primary">www.veripura.com</span>
+                <div className="flex justify-center gap-6 mb-3">
+                    <a href="https://www.linkedin.com/company/veripura/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">LinkedIn</a>
+                    <a href="https://www.instagram.com/veri.pura/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Instagram</a>
+                    <a href="https://x.com/VeriPura" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">X</a>
+                </div>
+                &copy; 2026 VeriPura&trade; Core | <span className="text-primary hover:underline cursor-pointer" onClick={() => navigate('/terms')}>Terms of Service</span> | <a href="https://www.veripura.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">www.veripura.com</a>
             </footer>
         </div>
     );
