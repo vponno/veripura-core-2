@@ -98,7 +98,8 @@ export class FoodSafetyAuditor extends SubAgent {
             const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
             if (diffDays < 30) return `⚠️ **Expiring soon** (${diffDays} days remaining)`;
             return "✅ Valid";
-        } catch {
+        } catch (error) {
+            console.warn("[FoodSafetyAuditor] Failed to parse certificate expiry date:", error);
             return "Unknown";
         }
     }

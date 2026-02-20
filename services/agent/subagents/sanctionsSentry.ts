@@ -31,7 +31,11 @@ export class SanctionsSentry extends SubAgent {
         let matches: any[] = [];
 
         if (watchlistSkill) {
-            const result = await watchlistSkill.execute({ text: `${exporter} ${vessel}` });
+            const result = await watchlistSkill.execute({
+                consignmentId: 'unknown',
+                files: [],
+                metadata: { query: `${exporter} ${vessel}` }
+            });
             matches = result.data?.matches || [];
         }
 

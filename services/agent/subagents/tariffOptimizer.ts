@@ -37,14 +37,17 @@ export class TariffOptimizer extends SubAgent {
             const tariffSkill = skills.get('tariff_optimizer');
             if (tariffSkill) {
                 const result = await tariffSkill.execute({
-                    product: 'Generic Product', // Context might need this if available
-                    hsCode,
-                    origin,
-                    destination,
-                    value
+                    consignmentId: 'unknown',
+                    files: [],
+                    metadata: {
+                        origin,
+                        destination,
+                        hsCode,
+                        value
+                    }
                 });
 
-                if (result.status === 'Pass') {
+                if (result.success && result.verdict === 'COMPLIANT') {
                     if (result.data?.savings) {
                         response += `💰 **Duty Saving Opportunity Identified!**\n`;
                         response += `- Trade Agreement: **${result.data.agreement}**\n`;
@@ -61,8 +64,15 @@ export class TariffOptimizer extends SubAgent {
                     } else {
                         response += `ℹ️ **Standard Duty Applied**: ${(result.data.dutyRate * 100).toFixed(1)}% (MFN). No preferential agreement active.\n`;
                     }
-                } else if (result.status === 'Warning') {
+                } else if (result.verdict === 'WARNING') {
                     response += `⚠️ **Optimization Warning**: ${result.data?.agreement || 'Agreement'} is revoked or negotiating.\n`;
+                } else if (!result.success) {
+                    response += `❌ **Tariff Calculation Error**: ${result.auditLog?.[0]?.details || 'Unknown error'}\n`;
+                    alerts.push({
+                        severity: 'critical',
+                        message: `Tariff calculation failed: ${result.auditLog?.[0]?.details || 'Unknown error'}`,
+                        suggestedAction: 'Review HS code, origin, and destination for accuracy.'
+                    });
                 }
             } else {
                 response += "⚠️ Skill `tariff_optimizer` not found in registry.";

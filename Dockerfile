@@ -13,8 +13,8 @@ RUN npm ci
 # Copy the rest of the application
 COPY . .
 
-# Build the app (bypassing widespread TS errors)
-RUN npx vite build
+# Build the app strictly via tsc -> vite
+RUN npm run build
 
 # Stage 2: Serve the app with Nginx
 FROM nginx:alpine
