@@ -2,6 +2,7 @@ import { AgentState, AgentEvent, AgentEventResult } from '../../types';
 import { GuardianAgent } from './guardianAgent';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { logger } from '../lib/logger';
 
 export interface AgentInstanceConfig {
     consignmentId: string;
@@ -17,11 +18,11 @@ export class GuardianAgentFactory {
         const { consignmentId, initialState, riskConfig } = config;
 
         if (this.instances.has(consignmentId)) {
-            console.log(`[GuardianAgentFactory] Returning existing instance for ${consignmentId}`);
+            logger.log(`[GuardianAgentFactory] Returning existing instance for ${consignmentId}`);
             return this.instances.get(consignmentId)!;
         }
 
-        console.log(`[GuardianAgentFactory] Spawning new GuardianAgent for consignment: ${consignmentId}`);
+        logger.log(`[GuardianAgentFactory] Spawning new GuardianAgent for consignment: ${consignmentId}`);
 
         const agent = new GuardianAgent(
             `guardian-${consignmentId}`,
@@ -47,11 +48,11 @@ export class GuardianAgentFactory {
             
             if (stateDoc.exists()) {
                 const savedState = stateDoc.data() as { state: AgentState; updatedAt: string };
-                console.log(`[GuardianAgentFactory] Hydrating agent state for ${consignmentId}`);
+                logger.log(`[GuardianAgentFactory] Hydrating agent state for ${consignmentId}`);
                 return this.spawn({ consignmentId, initialState: savedState.state });
             }
 
-            console.log(`[GuardianAgentFactory] No saved state for ${consignmentId}, creating new`);
+            logger.log(`[GuardianAgentFactory] No saved state for ${consignmentId}, creating new`);
             return this.spawn({ consignmentId });
         } catch (error) {
             console.error(`[GuardianAgentFactory] Failed to hydrate:`, error);
@@ -74,7 +75,7 @@ export class GuardianAgentFactory {
                 updatedAt: new Date().toISOString()
             }, { merge: true });
             
-            console.log(`[GuardianAgentFactory] Persisted state for ${consignmentId}`);
+            logger.log(`[GuardianAgentFactory] Persisted state for ${consignmentId}`);
         } catch (error) {
             console.error(`[GuardianAgentFactory] Failed to persist:`, error);
         }
@@ -104,13 +105,13 @@ export class GuardianAgentFactory {
     public static destroy(consignmentId: string): void {
         if (this.instances.has(consignmentId)) {
             this.instances.delete(consignmentId);
-            console.log(`[GuardianAgentFactory] Destroyed instance for ${consignmentId}`);
+            logger.log(`[GuardianAgentFactory] Destroyed instance for ${consignmentId}`);
         }
     }
 
     public static destroyAll(): void {
         this.instances.clear();
-        console.log(`[GuardianAgentFactory] Destroyed all instances`);
+        logger.log(`[GuardianAgentFactory] Destroyed all instances`);
     }
 }
 

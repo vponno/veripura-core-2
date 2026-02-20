@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import { AgentAlert, RLHFReviewCase } from '../types';
+import { logger } from './lib/logger';
 
 export const rlhfService = {
 
@@ -34,7 +35,7 @@ export const rlhfService = {
             const snap = await getDocs(q);
 
             if (!snap.empty) {
-                console.log(`[RLHF] Pending case already exists for ${docType}`);
+                logger.log(`[RLHF] Pending case already exists for ${docType}`);
                 return;
             }
 
@@ -52,7 +53,7 @@ export const rlhfService = {
             };
 
             const docRef = await addDoc(collection(db, 'review_queue'), newCase);
-            console.log(`[RLHF] Created Review Case: ${docRef.id}`);
+            logger.log(`[RLHF] Created Review Case: ${docRef.id}`);
             return docRef.id;
 
         } catch (error) {
@@ -106,7 +107,7 @@ export const rlhfService = {
                 trainingReady: true
             });
 
-            console.log(`[RLHF] Case ${caseId} resolved. Training data captured.`);
+            logger.log(`[RLHF] Case ${caseId} resolved. Training data captured.`);
 
         } catch (error) {
             console.error("Error resolving case:", error);

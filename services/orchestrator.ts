@@ -2,6 +2,7 @@ import { consignmentService, Consignment } from './consignmentService';
 import { GuardianAgentFactory, processPOUpload, processRouteUpdate, processUserMessage } from './agent/guardianAgentFactory';
 import { AgentEventResult } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from './lib/logger';
 
 export interface POUploadContext {
     consignmentId: string;
@@ -24,7 +25,7 @@ export class GuardianOrchestrator {
     ): Promise<OrchestratorResult> {
         const { consignmentId, documentType, analysisResult } = context;
 
-        console.log(`[Orchestrator] Handling PO Upload for ${consignmentId}, doc: ${documentType}`);
+        logger.log(`[Orchestrator] Handling PO Upload for ${consignmentId}, doc: ${documentType}`);
 
         const consignment = await consignmentService.getConsignment(consignmentId);
         if (!consignment) {
@@ -84,7 +85,7 @@ export class GuardianOrchestrator {
         newDestination: string,
         changedFactId?: string
     ): Promise<OrchestratorResult> {
-        console.log(`[Orchestrator] Handling Route Update for ${consignmentId}`);
+        logger.log(`[Orchestrator] Handling Route Update for ${consignmentId}`);
 
         let agentResult: AgentEventResult;
 
@@ -120,7 +121,7 @@ export class GuardianOrchestrator {
         consignmentId: string,
         message: string
     ): Promise<OrchestratorResult> {
-        console.log(`[Orchestrator] Handling User Message for ${consignmentId}`);
+        logger.log(`[Orchestrator] Handling User Message for ${consignmentId}`);
 
         let agentResult: AgentEventResult;
 
@@ -152,8 +153,8 @@ export class GuardianOrchestrator {
         analysisResult: any,
         agentResult: AgentEventResult
     ): any {
-        const hasCriticalAlerts = agentResult.alerts.some(a => a.severity === 'critical');
-        const hasWarnings = agentResult.alerts.some(a => a.severity === 'warning');
+        const hasCriticalAlerts = agentResult.alerts?.some(a => a.severity === 'critical');
+        const hasWarnings = agentResult.alerts?.some(a => a.severity === 'warning');
 
         let validationLevel = 'GREEN';
         let status = 'Validated';
@@ -181,7 +182,7 @@ export class GuardianOrchestrator {
 
         // Add required documents from Guardian Agent sub-agents
         if (agentResult.requiredDocuments && agentResult.requiredDocuments.length > 0) {
-            console.log(`[Orchestrator] Adding ${agentResult.requiredDocuments.length} required documents from Guardian Agent`);
+            logger.log(`[Orchestrator] Adding ${agentResult.requiredDocuments.length} required documents from Guardian Agent`);
             
             agentResult.requiredDocuments.forEach(doc => {
                 if (!updates[doc.name]) {
@@ -229,7 +230,7 @@ export class GuardianOrchestrator {
         }
 
         await consignmentService.updateConsignment(consignmentId, updatePayload);
-        console.log(`[Orchestrator] Applied updates for ${consignmentId}`);
+        logger.log(`[Orchestrator] Applied updates for ${consignmentId}`);
     }
 }
 

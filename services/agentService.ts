@@ -2,6 +2,7 @@ import { Consignment, AgentMessage, consignmentService } from './consignmentServ
 import { v4 as uuidv4 } from 'uuid';
 import { GuardianAgent } from './agent/guardianAgent';
 import { AgentEvent } from '../types';
+import { logger } from './lib/logger';
 
 // Singleton instance for the UI session
 let guardianAgentInstance: GuardianAgent | null = null;
@@ -42,7 +43,7 @@ export const agentService = {
     },
 
     // 2. Assess a new document against Ground Truth using the Collaborative Brain
-    assessDocument: async (consignmentId: string, docType: string, newDocAnalysis: any, consignment?: Consignment) => {
+    assessDocument: async (consignmentId: string, docType: string, newDocAnalysis: any, consignment?: Consignment, file?: File) => {
         const activeConsignment = consignment || await consignmentService.getConsignment(consignmentId);
         if (!activeConsignment) return;
 
@@ -56,6 +57,7 @@ export const agentService = {
             payload: {
                 documentId: docType, // Using docType as ID for roadmap lookup
                 analysis: newDocAnalysis,
+                file: file, // Pass file object for skills that need raw access (e.g. DocumentGuard)
                 shipment: {
                     origin: activeConsignment.exportFrom,
                     destination: activeConsignment.importTo,
@@ -92,8 +94,8 @@ export const agentService = {
         };
 
         // 5. RLHF Trigger: If High Severity / Low Confidence, queue for review
-        if (result.alerts.some(a => a.severity === 'critical' || a.severity === 'warning')) {
-            const highRiskAlert = result.alerts.find(a => a.severity === 'critical') || result.alerts[0];
+        if (result.alerts?.some(a => a.severity === 'critical' || a.severity === 'warning')) {
+            const highRiskAlert = result.alerts?.find(a => a.severity === 'critical') || result.alerts?.[0];
             try {
                 // Dynamic import to avoid circular dependencies if any
                 const { rlhfService } = await import('./rlhfService');
@@ -106,7 +108,7 @@ export const agentService = {
                     newDocAnalysis,
                     fileUrl
                 );
-                console.log(`[GuardianAgent] Triggered RLHF Review for ${docType}`);
+                logger.log(`[GuardianAgent] Triggered RLHF Review for ${docType}`);
             } catch (e) {
                 console.error("Failed to trigger RLHF:", e);
             }

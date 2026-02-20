@@ -13,6 +13,10 @@ RUN npm ci
 # Copy the rest of the application
 COPY . .
 
+# Capture the API key as a build argument and expose to Vite
+ARG VITE_GEMINI_API_KEY
+ENV VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY
+
 # Build the app strictly via tsc -> vite
 RUN npm run build
 

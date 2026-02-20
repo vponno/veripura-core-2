@@ -4,6 +4,7 @@ import { ref, uploadBytes, getDownloadURL, listAll, deleteObject } from 'firebas
 import { EncryptionService } from './encryptionService';
 import { iotaService } from './iotaService';
 import { Ed25519Keypair } from '@iota/iota-sdk/keypairs/ed25519';
+import { logger } from './lib/logger';
 
 export interface AgentMessage {
     id: string;
@@ -117,7 +118,7 @@ export const consignmentService = {
             const pk = userDoc.data()?.iotaPrivateKey;
 
             if (pk) {
-                console.log(`[ConsignmentService] Creating L1 Object for ${internalId}...`);
+                logger.log(`[ConsignmentService] Creating L1 Object for ${internalId}...`);
                 const iotaObj = await iotaService.registerConsignment(
                     pk,
                     internalId, // Passing Internal ID for on-chain map
@@ -131,7 +132,7 @@ export const consignmentService = {
                     }
                 );
                 iotaObjectId = iotaObj.id;
-                console.log(`[ConsignmentService] L1 Object Created: ${iotaObjectId}`);
+                logger.log(`[ConsignmentService] L1 Object Created: ${iotaObjectId}`);
 
                 // Update Firestore linkage
                 await updateDoc(docRef, { iotaObjectId });
@@ -154,7 +155,7 @@ export const consignmentService = {
         // SOFT DELETE (Archive) - Preserves data for traceability/audit
         const docRef = doc(db, 'consignments', id);
         await updateDoc(docRef, { status: 'Archived' });
-        console.log(`[ConsignmentService] Archived consignment ${id}`);
+        logger.log(`[ConsignmentService] Archived consignment ${id}`);
     },
 
     // Generic Update (for partial updates like Product, HS Code, Roadmap)
@@ -259,7 +260,7 @@ export const consignmentService = {
         const storagePath = `consignments/${consignmentId}/${simpleName}`;
         const storageRef = ref(storage, storagePath);
 
-        console.log(`[ConsignmentService] Uploading blob to ${storagePath}: size=${encryptedBlob.size}, type=${encryptedBlob.type}`);
+        logger.log(`[ConsignmentService] Uploading blob to ${storagePath}: size=${encryptedBlob.size}, type=${encryptedBlob.type}`);
 
         try {
             await uploadBytes(storageRef, encryptedBlob, { contentType: 'application/octet-stream' });
@@ -271,7 +272,7 @@ export const consignmentService = {
 
         // 4. Compute document hash for IOTA anchoring
         const documentHash = await computeHash(encryptedBlob);
-        console.log(`[ConsignmentService] Document hash: ${documentHash}`);
+        logger.log(`[ConsignmentService] Document hash: ${documentHash}`);
 
         // 5. Attempt real IOTA anchoring
         let iotaTxHash: string | undefined;
@@ -285,11 +286,11 @@ export const consignmentService = {
 
                 if (!iotaPrivateKey) {
                     // Fallback or just log
-                    console.log('[ConsignmentService] No IOTA key found.');
+                    logger.log('[ConsignmentService] No IOTA key found.');
                 }
 
                 if (iotaPrivateKey) {
-                    console.log('[ConsignmentService] Anchoring to IOTA blockchain...');
+                    logger.log('[ConsignmentService] Anchoring to IOTA blockchain...');
                     const anchorResult = await iotaService.anchorDocumentHash(
                         iotaPrivateKey,
                         documentHash,
@@ -297,7 +298,7 @@ export const consignmentService = {
                     );
                     iotaTxHash = anchorResult.digest;
                     iotaExplorerUrl = anchorResult.explorerUrl;
-                    console.log('[ConsignmentService] IOTA anchoring successful:', iotaExplorerUrl);
+                    logger.log('[ConsignmentService] IOTA anchoring successful:', iotaExplorerUrl);
                 } else {
                     console.warn('[ConsignmentService] Failed to obtain any IOTA key for anchoring.');
                 }
@@ -316,7 +317,7 @@ export const consignmentService = {
             hasCertificationErrors;
 
         if (shouldFlag) {
-            console.log('[ConsignmentService] Document flagged for human review');
+            logger.log('[ConsignmentService] Document flagged for human review');
             analysisResult.validationLevel = 'YELLOW'; // Or RED if critical, but YELLOW forces review
             analysisResult.requiresHumanReview = true;
 
@@ -502,7 +503,7 @@ export const consignmentService = {
                 },
                 status: 'human_verified'
             });
-            console.log(`[ConsignmentService] RLHF Loop: Captured ${humanLabel}`);
+            logger.log(`[ConsignmentService] RLHF Loop: Captured ${humanLabel}`);
         }
 
         return updatedDocData;
@@ -510,19 +511,8 @@ export const consignmentService = {
 
     // 10. Bulk Archive (Admin / Dev Tool)
     archiveAllConsignments: async () => {
-        console.log("[ConsignmentService] Starting Bulk Archive...");
-        const q = query(
-            collection(db, 'consignments'),
-            where('status', '!=', 'Archived')
-        );
-        const snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
-            console.log("[ConsignmentService] No active consignments to archive.");
-            return 0;
-        }
+        logger.log("[ConsignmentService] Starting Bulk Archive...");
         try {
-            console.log("[ConsignmentService] Starting Bulk Archive...");
             const q = query(
                 collection(db, 'consignments'),
                 where('status', '!=', 'Archived')
@@ -530,7 +520,7 @@ export const consignmentService = {
             const snapshot = await getDocs(q);
 
             if (snapshot.empty) {
-                console.log("[ConsignmentService] No active consignments to archive.");
+                logger.log("[ConsignmentService] No active consignments to archive.");
                 return 0;
             }
 
@@ -539,7 +529,7 @@ export const consignmentService = {
             );
 
             await Promise.all(batchPromises);
-            console.log(`[ConsignmentService] Successfully archived ${snapshot.size} consignments.`);
+            logger.log(`[ConsignmentService] Successfully archived ${snapshot.size} consignments.`);
             return snapshot.size;
         } catch (error) {
             console.error("[ConsignmentService] Bulk Archive Failed:", error);
@@ -549,7 +539,7 @@ export const consignmentService = {
 
     // 11. Heal Logical Mismatches (Self-Correcting UI Flow)
     healRouteMismatch: async (consignmentId: string, docType: string, correctDestination: string) => {
-        console.log(`[ConsignmentService] Healing Route Mismatch for ${consignmentId}. New Destination: ${correctDestination}`);
+        logger.log(`[ConsignmentService] Healing Route Mismatch for ${consignmentId}. New Destination: ${correctDestination}`);
         const docRef = doc(db, 'consignments', consignmentId);
 
         // 1. Update the consignment's importTo country
@@ -608,7 +598,7 @@ export const consignmentService = {
         const tree = new ConsignmentMerkleTree(docs);
         const root = tree.getRoot();
 
-        console.log(`[ConsignmentService] Generated Merkle Root for ${consignmentId}: ${root}`);
+        logger.log(`[ConsignmentService] Generated Merkle Root for ${consignmentId}: ${root}`);
 
         // Anchor to IOTA
         let iotaTxHash = null;

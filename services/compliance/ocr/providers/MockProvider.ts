@@ -1,5 +1,6 @@
 import { DocumentAnalysisProvider, AnalysisOptions, AnalysisResult } from '../types';
 import { ChecklistItemStatus, ChecklistItemCategory } from '../../../../types';
+import { logger } from '../../../lib/logger';
 
 /**
  * MockOCRProvider
@@ -12,7 +13,7 @@ export class MockOCRProvider implements DocumentAnalysisProvider {
     name = 'MockProvider';
 
     async analyze(fileBase64: string, mimeType: string, options: AnalysisOptions): Promise<AnalysisResult> {
-        console.log(`[MockOCRProvider] Simulating analysis for ${mimeType} from ${options.fromCountry} to ${options.toCountry}...`);
+        logger.log(`[MockOCRProvider] Simulating analysis for ${mimeType} from ${options.fromCountry} to ${options.toCountry}...`);
 
         // Artificial delay
         await new Promise(resolve => setTimeout(resolve, 800));

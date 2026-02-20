@@ -1,3 +1,5 @@
+import { logger } from './lib/logger';
+
 export interface SanctionHit {
     entity: string;
     list: string; // e.g., "OFAC SDN", "EU Consolidated"
@@ -38,7 +40,7 @@ export const sanctionsService = {
             try {
                 // Placeholder for real OpenSanctions or Refinitiv API call
                 // const response = await fetch(`https://api.opensanctions.org/match/...`, ...);
-                console.log("Checking Live Sanctions API...");
+                logger.log("Checking Live Sanctions API...");
             } catch (e) {
                 console.error("Sanctions API failed, falling back to local.", e);
             }

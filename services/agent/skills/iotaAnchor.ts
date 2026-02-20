@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { logger } from '../../lib/logger';
 
 export class IotaAnchorSkill implements Skill {
     id = 'iota_anchor';
@@ -6,9 +7,7 @@ export class IotaAnchorSkill implements Skill {
     description = 'Anchors document hashes to the IOTA Tangle for immutability.';
 
     async execute(input: { documentHash: string, metadata?: any }): Promise<SkillResult> {
-        // Mock IOTA interaction
-        // In production, this would use @iota/sdk to send a payload to the Tangle
-        console.log(`[IotaAnchor] Anchoring hash: ${input.documentHash}`);
+        logger.log(`[IotaAnchor] Anchoring hash: ${input.documentHash}`);
 
         return {
             success: true,

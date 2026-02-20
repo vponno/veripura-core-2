@@ -8,6 +8,7 @@ import {
 } from '../../types';
 import { DependencyGraph } from './dependencyGraph';
 import { SubAgent } from './subAgent';
+import { logger } from '../lib/logger';
 import { SubAgentFactory } from './subAgentFactory';
 import { SkillRegistry } from './skills';
 import * as AllSkills from './skills';
@@ -50,7 +51,7 @@ export class GuardianAgent {
                         this.skillRegistry.register(skillInstance);
                     }
                 } catch (e) {
-                    // Ignore non-constructible exports or non-skills
+                    console.warn(`[GuardianAgent] Failed to instantiate skill ${SkillClass.name}:`, e);
                 }
             }
         });
@@ -93,14 +94,14 @@ export class GuardianAgent {
      * Call this when external rules change.
      */
     public updateRiskConfig(newConfig: ActiveDefenseConfig) {
-        console.log(`[GuardianAgent] Updating Risk Configuration.`);
+        logger.log(`[GuardianAgent] Updating Risk Configuration.`);
         this.activeDefenseConfig = newConfig;
     }
 
     public registerSubAgent(agent: SubAgent) {
         if (!this.subAgents.has(agent.id)) {
             this.subAgents.set(agent.id, agent);
-            console.log(`[GuardianAgent] Registered Sub-Agent: ${agent.name}`);
+            logger.log(`[GuardianAgent] Registered Sub-Agent: ${agent.name}`);
             if (!this.state.subAgents.includes(agent.id)) {
                 this.state.subAgents.push(agent.id);
             }
@@ -109,7 +110,7 @@ export class GuardianAgent {
 
     public unregisterSubAgent(agentId: string) {
         if (this.subAgents.delete(agentId)) {
-            console.log(`[GuardianAgent] Unregistered Sub-Agent: ${agentId}`);
+            logger.log(`[GuardianAgent] Unregistered Sub-Agent: ${agentId}`);
             this.state.subAgents = this.state.subAgents.filter(id => id !== agentId);
         }
     }
@@ -147,7 +148,7 @@ export class GuardianAgent {
         this.state.status = 'processing';
         this.state.lastActive = new Date().toISOString();
 
-        console.log(`[GuardianAgent ${this.id}] Processing Event: ${event.type}`);
+        logger.log(`[GuardianAgent ${this.id}] Processing Event: ${event.type}`);
 
         // Automated Sync before processing
         this.synchronizeSubAgents();
@@ -175,7 +176,7 @@ export class GuardianAgent {
 
             for (const agent of activeAgents) {
                 if (agent.canHandle(event)) {
-                    console.log(`[GuardianAgent] Delegating to: ${agent.name}`);
+                    logger.log(`[GuardianAgent] Delegating to: ${agent.name}`);
 
                     const startTime = Date.now();
                     const subResult = await agent.process(event, this.state.memory, this.skillRegistry);
@@ -191,9 +192,9 @@ export class GuardianAgent {
                         // Extended details for UI
                         skillsUsed: this.extractSkillsUsed(subResult),
                         documentsIdentified: subResult.requiredDocuments?.map(d => d.name) || [],
-                        alerts: subResult.alerts?.map(a => ({ 
-                            severity: a.severity, 
-                            message: a.message 
+                        alerts: subResult.alerts?.map(a => ({
+                            severity: a.severity,
+                            message: a.message
                         })) || []
                     };
                     result.activityLog?.push(activityEntry);
@@ -201,7 +202,7 @@ export class GuardianAgent {
                     if (subResult.response) {
                         subResponses.push(subResult.response);
                     }
-                    if (subResult.alerts.length > 0) {
+                    if (subResult.alerts && subResult.alerts.length > 0) {
                         result.alerts.push(...subResult.alerts);
                     }
 
@@ -215,7 +216,35 @@ export class GuardianAgent {
 
                     // Merge memory updates if any
                     if (subResult.memoryUpdates) {
-                        this.state.memory = { ...this.state.memory, ...subResult.memoryUpdates };
+                        const updates = subResult.memoryUpdates;
+
+                        // Deep merge shortTerm to preserve nested data
+                        if (updates.shortTerm) {
+                            this.state.memory.shortTerm = {
+                                ...this.state.memory.shortTerm,
+                                ...updates.shortTerm,
+                                conversationBuffer: [
+                                    ...this.state.memory.shortTerm.conversationBuffer,
+                                    ...(updates.shortTerm.conversationBuffer || [])
+                                ],
+                                stickyNoteBuffer: {
+                                    ...this.state.memory.shortTerm.stickyNoteBuffer,
+                                    ...(updates.shortTerm.stickyNoteBuffer || {})
+                                }
+                            };
+                        }
+
+                        // Deep merge knowledgeGraph
+                        if (updates.knowledgeGraph) {
+                            this.state.memory.knowledgeGraph = {
+                                ...this.state.memory.knowledgeGraph,
+                                ...updates.knowledgeGraph,
+                                facts: [
+                                    ...this.state.memory.knowledgeGraph.facts,
+                                    ...(updates.knowledgeGraph.facts || [])
+                                ]
+                            };
+                        }
                     }
                 }
             }
@@ -266,7 +295,7 @@ export class GuardianAgent {
         documentType?: string
     ): Promise<AgentEventResult> {
         this.state.status = 'processing';
-        
+
         const existingFacts = this.graph.getAllFacts();
         const newFacts = this.state.memory.knowledgeGraph.facts;
 
@@ -349,6 +378,7 @@ export class GuardianAgent {
         switch (event.type) {
             case 'DOCUMENT_UPLOAD':
                 await this.trackDocumentFact(event.payload);
+                await this.runDocumentGuard(event, result);
                 break;
             case 'ROUTE_UPDATE':
                 await this.handleRouteInvalidation(event.payload, result);
@@ -366,7 +396,7 @@ export class GuardianAgent {
         // Logic: Roll dice against dynamic threshold
         const threshold = this.activeDefenseConfig.entropyThreshold;
         if (Math.random() < threshold) {
-            console.log(`[Active Defense] Entropy Audit Triggered (Threshold: ${threshold})`);
+            logger.log(`[Active Defense] Entropy Audit Triggered (Threshold: ${threshold})`);
             result.alerts.push({
                 severity: 'info',
                 message: 'Entropy Audit: Random verification check initiated for Model Drift calibration.',
@@ -383,7 +413,7 @@ export class GuardianAgent {
             const match = profile.matchKeywords.some(keyword => payloadStr.includes(keyword.toLowerCase()));
 
             if (match) {
-                console.log(`[Active Defense] High Gravity Detected via Profile Match.`);
+                logger.log(`[Active Defense] High Gravity Detected via Profile Match.`);
 
                 if (profile.gravityScore > 0.7) {
                     result.alerts.push({
@@ -398,6 +428,52 @@ export class GuardianAgent {
                     // In a real system, this would trigger a background job
                 }
             }
+        }
+    }
+
+    private async runDocumentGuard(event: AgentEvent, result: AgentEventResult) {
+        const skill = this.skillRegistry.get('document_guard_skill');
+        if (!skill) return;
+
+        logger.log(`[GuardianAgent] Running Document Guard (Invoice Reconciler)`);
+
+        // Construct Context
+        // We need to pass the file. In a real scenario, the file object or URL is in payload.
+        // agentService passes payload: { documentId, analysis, shipment }
+        // It does NOT pass the File object directly in payload usually (too big for JSON payload if serialized).
+        // However, `agentService.assessDocument` is called from `RegisterConsignment` where `file` is available.
+        // We might need to update `agentService` to pass the file in context or stored location.
+        // For Client-Side execution (Prototype), we can try to pass it if it's in memory.
+
+        // Update: `agentService.assessDocument` doesn't pass `files` in `event` payload.
+        // We need to fetch it or rely on `payload.analysis` which was already done by `validationService`.
+        // BUT the user wants "Invoice Reconciler" logic (LlamaParse).
+        // `validationService.analyzeDocument` uses Gemini.
+        // The `DocumentGuardSkill` we just wrote expects `files` in context.
+
+        // Hack for Prototype: We assume `event.payload` MIGHT contain the file if we modify `agentService`,
+        // Or we warn that we need the file.
+        // Let's modify `agentService` to pass `file` in a transient way if possible, or skip if not.
+        const context: any = {
+            consignmentId: this.id,
+            files: event.payload.file ? [event.payload.file] : [], // Expect file in payload
+            metadata: event.payload
+        };
+
+        const skillResult = await skill.execute(context);
+
+        if (skillResult.success) {
+            this.appendThought(`Document Guard reconciled document: ${skillResult.verdict}`);
+            if (skillResult.verdict === 'WARNING' || skillResult.verdict === 'NON_COMPLIANT') {
+                result.alerts.push({
+                    severity: skillResult.verdict === 'NON_COMPLIANT' ? 'critical' : 'warning',
+                    message: `Document Audit: ${skillResult.auditLog[0].details}`,
+                    suggestedAction: 'Review document vs consignment details'
+                });
+            }
+        } else {
+            // Log error but don't fail the whole event
+            logger.log(`[GuardianAgent] Document Guard Skipped/Failed: ${skillResult.errors?.join(', ')}`);
         }
     }
 
@@ -520,9 +596,9 @@ export class GuardianAgent {
     }
 
     private async resolveAgentConflicts(result: AgentEventResult) {
-        if (result.alerts.length < 2) return;
+        if (!result.alerts || result.alerts.length < 2) return;
 
-        console.log(`[GuardianAgent] Running Conflict Resolution on ${result.alerts.length} alerts.`);
+        logger.log(`[GuardianAgent] Running Conflict Resolution on ${result.alerts.length} alerts.`);
 
         // Use Conflict Scanner skill if available
         const scanner = this.skillRegistry.get('conflict_scanner');
@@ -550,33 +626,33 @@ export class GuardianAgent {
     private extractSkillsUsed(subResult: any): string[] {
         // Extract skill names from the result data if available
         const skills: string[] = [];
-        
+
         if (subResult.data?.skillsUsed) {
             return subResult.data.skillsUsed;
         }
-        
+
         // Infer from result message or data
         if (subResult.data?.regulation) {
             skills.push(`${subResult.data.regulation} Check`);
         }
-        
+
         if (subResult.data?.standard) {
             skills.push(`${subResult.data.standard} Validation`);
         }
-        
+
         // Default to generic skill name based on response content
         if (subResult.response?.includes('Certificate')) {
             skills.push('Certificate Validator');
         }
-        
+
         if (subResult.response?.includes('Regulatory')) {
             skills.push('Regulatory Check');
         }
-        
+
         if (subResult.response?.includes('Audit')) {
             skills.push('Audit Analysis');
         }
-        
+
         return skills.length > 0 ? skills : ['Domain Analysis'];
     }
 }

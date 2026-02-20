@@ -1,4 +1,5 @@
 import { AnalysisEngine, GeminiV3Engine, StandardOCREngine } from "./DocumentAnalysisEngines";
+import { logger } from './lib/logger';
 
 // --- Service Implementation ---
 
@@ -25,7 +26,7 @@ class ValidationService {
         } else {
             this.engine = new GeminiV3Engine();
         }
-        console.log(`[ValidationService] Switched to engine: ${this.engine.name}`);
+        logger.log(`[ValidationService] Switched to engine: ${this.engine.name}`);
     }
 
     public getActiveEngineName(): string {
@@ -33,12 +34,12 @@ class ValidationService {
     }
 
     public async analyzeDocument(file: File, context?: { exportFrom: string, importTo: string }): Promise<any> {
-        console.log(`[ValidationService] Analyzing with ${this.engine.name}...`);
+        logger.log(`[ValidationService] Analyzing with ${this.engine.name}...`);
         return this.engine.analyzeDocument(file, context);
     }
 
     public async extractTradeDna(file: File): Promise<any> {
-        console.log(`[ValidationService] Extracting DNA with ${this.engine.name}...`);
+        logger.log(`[ValidationService] Extracting DNA with ${this.engine.name}...`);
         return this.engine.extractTradeDna(file);
     }
 }

@@ -5,6 +5,7 @@ import { decodeIotaPrivateKey } from '@iota/iota-sdk/cryptography';
 import { requestIotaFromFaucetV0, getFaucetHost } from '@iota/iota-sdk/faucet';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { bcs } from '@iota/iota-sdk/bcs';
+import { logger } from './lib/logger';
 
 // This service mimics the interaction with an IOTA Rebased Node running MoveVM
 // In a real app, this would use a JSON-RPC client to call Move functions.
@@ -21,7 +22,7 @@ class IotaService {
   async getNodeInfo() {
     try {
       const info = await this.client.getProtocolConfig();
-      console.log('IOTA Node Info:', info);
+      logger.log('IOTA Node Info:', info);
       return info;
     } catch (error) {
       console.error('Failed to connect to IOTA Node:', error);
@@ -106,12 +107,12 @@ class IotaService {
     metadata?: { consignmentId?: string; docType?: string }
   ): Promise<{ digest: string; explorerUrl: string }> {
     try {
-      console.log('[IOTA Anchor] Starting document hash anchoring...');
+      logger.log('[IOTA Anchor] Starting document hash anchoring...');
 
       // Handle both bech32 (iotaprivkey1...) and raw format keys
       let keypair: Ed25519Keypair;
       if (privateKey.startsWith('iotaprivkey')) {
-        console.log('[IOTA Anchor] Decoding bech32 private key...');
+        logger.log('[IOTA Anchor] Decoding bech32 private key...');
         const decoded = decodeIotaPrivateKey(privateKey);
         keypair = Ed25519Keypair.fromSecretKey(decoded.secretKey);
       } else {
@@ -122,10 +123,10 @@ class IotaService {
 
       // Check balance first
       const balance = await this.getAddressBalance(address);
-      console.log(`[IOTA Anchor] Address: ${address}, Balance: ${balance}`);
+      logger.log(`[IOTA Anchor] Address: ${address}, Balance: ${balance}`);
 
       if (balance < 1000000) { // Need at least some IOTA for gas
-        console.log('[IOTA Anchor] Low balance, requesting tokens...');
+        logger.log('[IOTA Anchor] Low balance, requesting tokens...');
         await this.requestTokens(address);
         // Wait a bit for faucet to process
         await new Promise(r => setTimeout(r, 3000));
@@ -158,14 +159,14 @@ class IotaService {
         }
       });
 
-      console.log('[IOTA Anchor] Transaction submitted:', result.digest);
+      logger.log('[IOTA Anchor] Transaction submitted:', result.digest);
 
       // Wait for confirmation
       await this.client.waitForTransaction({ digest: result.digest });
 
       const explorerUrl = `https://explorer.rebased.iota.org/txblock/${result.digest}?network=testnet`;
 
-      console.log('[IOTA Anchor] Success! Explorer URL:', explorerUrl);
+      logger.log('[IOTA Anchor] Success! Explorer URL:', explorerUrl);
 
       return {
         digest: result.digest,
@@ -186,7 +187,7 @@ class IotaService {
     merkleRoot: string,
     consignmentId: string
   ): Promise<{ digest: string; explorerUrl: string }> {
-    console.log(`[IOTA Anchor] Anchoring Merkle Root for Consignment ${consignmentId}: ${merkleRoot}`);
+    logger.log(`[IOTA Anchor] Anchoring Merkle Root for Consignment ${consignmentId}: ${merkleRoot}`);
     // We repurpose the document anchor logic since the mechanism (data payload in transaction) is identical.
     // The "documentHash" is simply the "merkleRoot".
     return this.anchorDocumentHash(privateKey, merkleRoot, { consignmentId, docType: 'MERKLE_ROOT' });
@@ -222,7 +223,7 @@ class IotaService {
     // 1. If Package ID exists, try Real Transaction
     if (packageId) {
       try {
-        console.log("Registering Consignment (LEAN) on IOTA Network...", packageId);
+        logger.log("Registering Consignment (LEAN) on IOTA Network...", packageId);
         const keypair = Ed25519Keypair.fromSecretKey(signerPrivateKey);
         const txb = new Transaction();
 
@@ -243,7 +244,7 @@ class IotaService {
           }
         });
 
-        console.log("Transaction Result:", result);
+        logger.log("Transaction Result:", result);
 
         // Return a constructed object since we rely on the chain now
         return {
@@ -267,7 +268,7 @@ class IotaService {
       }
     } else {
       // 2. Fallback to Mock 
-      console.log("Simulating Registration (Lean Mode)");
+      logger.log("Simulating Registration (Lean Mode)");
       await new Promise(r => setTimeout(r, 2000));
 
       return {
@@ -312,7 +313,7 @@ class IotaService {
       // Check balance
       const balance = await this.getAddressBalance(address);
       if (balance < 5000000) { // 0.005 IOTA
-        console.log('Requesting content for gas...');
+        logger.log('Requesting content for gas...');
         await this.requestTokens(address);
         await new Promise(r => setTimeout(r, 2000));
       }
@@ -321,7 +322,7 @@ class IotaService {
 
       // OPTION A: Smart Contract Call
       if (packageId) {
-        console.log("Creating Contract via Move Call...", packageId);
+        logger.log("Creating Contract via Move Call...", packageId);
         const txb = new Transaction();
         txb.moveCall({
           target: `${packageId}::supply_chain::create_contract`,
@@ -347,7 +348,7 @@ class IotaService {
       }
 
       // OPTION B: Data Anchor (Fallback)
-      console.log("Package ID not found. Fallback to Data Anchoring.");
+      logger.log("Package ID not found. Fallback to Data Anchoring.");
       const txb = new Transaction();
 
       // Send 0 value to Buyer, but include Contract Data in the inputs/structure

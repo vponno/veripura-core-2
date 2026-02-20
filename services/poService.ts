@@ -4,6 +4,7 @@ import { EncryptionService } from './encryptionService';
 import { iotaService } from './iotaService';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from './lib/firebase';
+import { logger } from './lib/logger';
 
 async function computeHash(blob: Blob): Promise<string> {
     const buffer = await blob.arrayBuffer();
@@ -32,7 +33,7 @@ export const poService = {
     async uploadPurchaseOrder(params: UploadPOParams): Promise<POUploadResult> {
         const { consignmentId, file, analysisResult } = params;
 
-        console.log(`[POService] Uploading Purchase Order for consignment: ${consignmentId}`);
+        logger.log(`[POService] Uploading Purchase Order for consignment: ${consignmentId}`);
 
         const consignment = await consignmentService.getConsignment(consignmentId);
         if (!consignment || !consignment.encryptionKeyJwk) {
@@ -85,7 +86,7 @@ export const poService = {
             analysisResult
         });
 
-        const flagged = orchestratorResult.alerts.some(a => a.severity === 'critical' || a.severity === 'warning');
+        const flagged = orchestratorResult.alerts?.some(a => a.severity === 'critical' || a.severity === 'warning');
 
         const roadmapUpdates = {
             ...orchestratorResult.roadmapUpdates,

@@ -3,6 +3,7 @@ import { Transaction } from "@iota/iota-sdk/transactions";
 import { MOCK_PRIVATE_KEY_USER, PACKAGE_ID, SPONSOR_ADDRESS } from '../constants'; // Assumed constants
 import { Ed25519Keypair } from "@iota/iota-sdk/keypairs/ed25519";
 import { fromB64 } from "@iota/iota-sdk/utils";
+import { logger } from './lib/logger';
 
 // Initialize Client (Connecting to IOTA Rebased Devnet)
 const client = new IotaClient({ url: getFullnodeUrl("devnet") });
@@ -12,7 +13,7 @@ const gasStationService = {
     signTransaction: async (txBytes: Uint8Array) => {
         // In a real app, this sends txBytes to a backend API which holds the Sponsor Private Key.
         // The backend validates the tx, signs it, and returns the signature.
-        console.log("Mock Gas Station: Signing transaction...");
+        logger.log("Mock Gas Station: Signing transaction...");
         // Return a dummy signature for simulation or implemented mock logic if keys available
         return "mock_sponsor_signature_base64";
     }
@@ -68,7 +69,7 @@ export const iotaConnectorService = {
 
             // 7. Execute (Note: In a browser wallet context, we would now request the User to sign)
             // Since we don't have a real connected wallet in this snippets-only mode:
-            console.log("Transaction built and sponsored!", {
+            logger.log("Transaction built and sponsored!", {
                 txDigest: "mock_digest_" + Date.now(),
                 sponsorSignature
             });
