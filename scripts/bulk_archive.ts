@@ -5,7 +5,7 @@ import { getFirestore, collection, query, where, getDocs, updateDoc, doc } from 
 
 // Config from services/lib/firebase.ts
 const firebaseConfig = {
-    apiKey: "AIzaSyAEddI4_IwfRu2_vjCMa3x91JOYENpFuW4",
+    apiKey: "YOUR_API_KEY",
     authDomain: "veripura-f92a5.firebaseapp.com",
     projectId: "veripura-f92a5",
     storageBucket: "veripura-f92a5.firebasestorage.app",
