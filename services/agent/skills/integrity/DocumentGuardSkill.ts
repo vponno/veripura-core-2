@@ -1,7 +1,7 @@
 
 import { ISkill, SkillCategory, SkillContext, SkillResult } from '../../types';
-// @ts-ignore - LlamaIndex exports can be tricky, ignoring check for now to allow build
-import { LlamaParseReader } from 'llama-cloud-services';
+import { LlamaCloud } from '@llamaindex/llama-cloud';
+import { toFile } from '@llamaindex/llama-cloud/core/uploads.js';
 
 export class DocumentGuardSkill implements ISkill {
     public id = 'document_guard_skill';
@@ -52,20 +52,22 @@ export class DocumentGuardSkill implements ISkill {
         }
 
         try {
-            // 3. Parse Document (Reality)
-            // LlamaParseReader in browser usually takes a blob/file or content.
-            // Using generic handling here.
-            const reader = new LlamaParseReader({ apiKey, resultType: "markdown" });
+            const client = new LlamaCloud({ apiKey });
 
             // Convert file to Uint8Array for generic content loading
             const arrayBuffer = await file.arrayBuffer();
-            const uint8Array = new Uint8Array(arrayBuffer);
+            const uploadFile = await toFile(arrayBuffer, file.name || 'document.pdf');
 
-            // Check if loadData works directly with data
-            // If strictly node-fs dependent, we might need a workaround or just skip deep parsing for now.
-            // But LlamaIndexTS supports browser usage. 
-            const documents = await reader.loadDataAsContent(uint8Array, file.name);
-            const parsedText = documents[0]?.text || "";
+            // Parse document directly using the new SDK
+            const jobResult = await client.parsing.parse({
+                upload_file: uploadFile,
+                tier: 'cost_effective',
+                version: 'latest',
+                expand: ['markdown']
+            });
+
+            // @ts-ignore
+            const parsedText = jobResult.markdown_full || jobResult.markdown?.pages?.map(p => p.markdown || "").join("\n") || "";
 
             if (!parsedText) {
                 throw new Error("Failed to extract text from document.");
