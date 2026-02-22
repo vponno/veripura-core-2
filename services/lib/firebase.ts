@@ -8,8 +8,8 @@ const firebaseConfig = {
     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "veripura-f92a5",
     storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "veripura-f92a5.firebasestorage.app",
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "487093021373",
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:487093021373:web:942fc9bc2944794f1da5d4",
-    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-VNV3C394FQ"
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:487093021373:web:14c39cc3a58196621da5d4",
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-QY4T240SHL"
 };
 
 import { getStorage } from "firebase/storage";

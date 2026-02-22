@@ -10,8 +10,8 @@ const firebaseConfig = {
     projectId: "veripura-f92a5",
     storageBucket: "veripura-f92a5.firebasestorage.app",
     messagingSenderId: "487093021373",
-    appId: "1:487093021373:web:942fc9bc2944794f1da5d4",
-    measurementId: "G-VNV3C394FQ"
+    appId: "1:487093021373:web:14c39cc3a58196621da5d4",
+    measurementId: "G-QY4T240SHL"
 };
 
 // Initialize Firebase
