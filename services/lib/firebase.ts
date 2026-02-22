@@ -3,7 +3,7 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "***REMOVED***",
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAEddI4_IwfRu2_vjCMa3x91JOYENpFuW4",
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "veripura-f92a5.firebaseapp.com",
     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "veripura-f92a5",
     storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "veripura-f92a5.firebasestorage.app",
