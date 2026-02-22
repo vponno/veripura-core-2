@@ -5,12 +5,13 @@ import { getFirestore, collection, query, where, getDocs, updateDoc, doc } from 
 
 // Config from services/lib/firebase.ts
 const firebaseConfig = {
-    apiKey: "AIzaSyA80wb0r7T1eeQyGbJMbtVZukG5uUuaggM",
-    authDomain: "veripura-connect-live.firebaseapp.com",
-    projectId: "veripura-connect-live",
-    storageBucket: "veripura-connect-live.firebasestorage.app",
-    messagingSenderId: "249189264102",
-    appId: "1:249189264102:web:92944fb8c2a2e62824a927"
+    apiKey: "***REMOVED***",
+    authDomain: "veripura-f92a5.firebaseapp.com",
+    projectId: "veripura-f92a5",
+    storageBucket: "veripura-f92a5.firebasestorage.app",
+    messagingSenderId: "487093021373",
+    appId: "1:487093021373:web:942fc9bc2944794f1da5d4",
+    measurementId: "G-VNV3C394FQ"
 };
 
 // Initialize Firebase

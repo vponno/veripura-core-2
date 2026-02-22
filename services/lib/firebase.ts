@@ -3,12 +3,13 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyA80wb0r7T1eeQyGbJMbtVZukG5uUuaggM",
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "veripura-connect-live.firebaseapp.com",
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "veripura-connect-live",
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "veripura-connect-live.firebasestorage.app",
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "249189264102",
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:249189264102:web:92944fb8c2a2e62824a927"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "***REMOVED***",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "veripura-f92a5.firebaseapp.com",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "veripura-f92a5",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "veripura-f92a5.firebasestorage.app",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "487093021373",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:487093021373:web:942fc9bc2944794f1da5d4",
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-VNV3C394FQ"
 };
 
 import { getStorage } from "firebase/storage";
