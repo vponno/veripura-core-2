@@ -38,3 +38,6 @@ service-account.json
 
 # Move
 move/**/build/
+
+# Telemetry
+telemetry-id
