@@ -290,7 +290,7 @@ Assign overall validationLevel:
 
         try {
             const response = await this.ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-3.0-flash',
                 contents: {
                     parts: [
                         { inlineData: { mimeType: file.type, data: base64Data } },
@@ -335,7 +335,7 @@ Assign overall validationLevel:
 
         try {
             const response = await this.ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-3.0-flash',
                 contents: {
                     parts: [
                         { inlineData: { mimeType: file.type, data: base64Data } },

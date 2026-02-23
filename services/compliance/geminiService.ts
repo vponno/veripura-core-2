@@ -99,7 +99,7 @@ export const generateComplianceChecklist = async (fileBase64: string, mimeType: 
 Your entire response must be a single JSON object that strictly adheres to the provided schema.`;
 
   const response = await getAI().models.generateContent({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-3.0-flash',
     contents: { parts: [imagePart, { text: prompt }] },
     config: {
       responseMimeType: "application/json",
@@ -139,7 +139,7 @@ export const generateDraftDocument = async (data: ExtractedPOData, documentType:
     `;
 
   const response = await getAI().models.generateContent({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-3.0-flash',
     contents: prompt,
   });
 
@@ -156,7 +156,7 @@ export const checkForRegulatoryUpdates = async (fromCountry: string, toCountry: 
     Your entire response must be just the single alert sentence or the text 'NO_UPDATES'.`;
 
   const response = await getAI().models.generateContent({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-3.0-flash',
     contents: prompt,
   });
 
