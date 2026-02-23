@@ -54,6 +54,8 @@ export interface Consignment {
             documentHash?: string; // SHA-256 hash of the encrypted blob
             iotaTxHash?: string;   // IOTA transaction hash (if anchored)
             iotaExplorerUrl?: string; // Link to IOTA explorer
+            iotaTxCost?: string;   // New: Transaction cost in IOTA
+            iotaError?: string;    // New: Last anchoring error if any
             description?: string; // For auto-generated tasks
             agencyLink?: string;  // For auto-generated tasks
         }
@@ -277,6 +279,8 @@ export const consignmentService = {
         // 5. Attempt real IOTA anchoring
         let iotaTxHash: string | undefined;
         let iotaExplorerUrl: string | undefined;
+        let iotaTxCost: string | undefined;
+        let iotaError: string | undefined;
 
         try {
             const ownerId = consignment.ownerId; // Optimization: we already fetched consignment above
@@ -298,13 +302,15 @@ export const consignmentService = {
                     );
                     iotaTxHash = anchorResult.digest;
                     iotaExplorerUrl = anchorResult.explorerUrl;
-                    logger.log('[ConsignmentService] IOTA anchoring successful:', iotaExplorerUrl);
+                    iotaTxCost = anchorResult.txCost;
+                    logger.log('[ConsignmentService] IOTA anchoring successful:', iotaExplorerUrl, 'Cost:', iotaTxCost);
                 } else {
                     console.warn('[ConsignmentService] Failed to obtain any IOTA key for anchoring.');
                 }
             }
-        } catch (iotaError) {
-            console.error('[ConsignmentService] IOTA anchoring failed (continuing without):', iotaError);
+        } catch (err: any) {
+            console.error('[ConsignmentService] IOTA anchoring failed (continuing without):', err);
+            iotaError = err.message || 'Unknown IOTA error';
         }
 
         // 6. Handle Flagging for Human Review
@@ -366,6 +372,8 @@ export const consignmentService = {
             validationLevel: analysisResult.validationLevel,
             documentHash,
             iotaTxHash: iotaTxHash || null,
+            iotaTxCost: iotaTxCost || null,
+            iotaError: iotaError || null,
             fileUrl, // Store URL for multimodal training / audit
             storagePath, // Store path for bulk download
             timestamp: new Date().toISOString(),
@@ -387,7 +395,9 @@ export const consignmentService = {
             uploadedAt: new Date().toISOString(),
             documentHash,
             iotaTxHash: iotaTxHash || null,
-            iotaExplorerUrl: iotaExplorerUrl || null
+            iotaExplorerUrl: iotaExplorerUrl || null,
+            iotaTxCost: iotaTxCost || null,
+            iotaError: iotaError || null
         };
 
         // If specific future documents are recommended (and we aren't in a route mismatch that needs fixing first), we could add them here.

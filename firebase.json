@@ -27,7 +27,7 @@
   },
   "storage": {
     "rules": "storage.rules",
-    "bucket": "veripura-connect-live.appspot.com"
+    "bucket": "veripura-f92a5.firebasestorage.app"
   },
   "extensions": {
     "firestore-bigquery-export": "firebase/firestore-bigquery-export@0.2.6"

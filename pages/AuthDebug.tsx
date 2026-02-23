@@ -4,6 +4,8 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/lib/firebase';
 import { iotaService } from '../services/iotaService';
 import { Wallet, User, LogOut, Copy, ExternalLink, ShieldCheck, Coins, AlertTriangle, Key, Eye, EyeOff } from 'lucide-react';
+import DIDManagement from '../components/DIDManagement';
+import IOTATransactionHistory from '../components/IOTATransactionHistory';
 
 const WalletProfile: React.FC = () => {
     const { currentUser, logout, error } = useAuth();
@@ -299,6 +301,12 @@ const WalletProfile: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* DID Management */}
+            <DIDManagement />
+
+            {/* IOTA Transaction History */}
+            <IOTATransactionHistory maxItems={20} showDetails={true} />
 
         </div>
     );

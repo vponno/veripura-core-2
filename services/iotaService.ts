@@ -108,6 +108,70 @@ class IotaService {
     }
   }
 
+  /**
+   * Get transaction history for an address
+   * Returns all transactions involving the given address
+   */
+  async getTransactionHistory(address: string, limit: number = 20): Promise<{
+    digest: string;
+    timestamp: number;
+    timestampISO: string;
+    sender: string;
+    recipients: string[];
+    amount: number;
+    objectChanges: any[];
+  }[]> {
+    try {
+      console.log(`[IOTA] Fetching transaction history for: ${address}`);
+      
+      // Query transaction blocks for this address using correct filter format
+      const response = await this.client.queryTransactionBlocks({
+        filter: {
+          FromAddress: address,
+        },
+        limit,
+        options: {
+          showEffects: true,
+          showEvents: true,
+        }
+      });
+
+      console.log(`[IOTA] Found ${response.data.length} transactions`);
+
+      return response.data.map(tx => {
+        // Determine sender from the transaction
+        const sender = (tx.transaction as any)?.sender || '';
+        
+        // Extract recipients from effects (transfers)
+        const recipients: string[] = [];
+        let amount = 0;
+
+        if ((tx.effects as any)?.objectChanges) {
+          (tx.effects as any).objectChanges.forEach((change: any) => {
+            if (change.type === 'transferred') {
+              if (change.recipient && change.recipient !== sender) {
+                recipients.push(change.recipient);
+              }
+            }
+          });
+        }
+
+        return {
+          digest: tx.digest,
+          timestamp: Number(tx.timestampMs) || 0,
+          timestampISO: tx.timestampMs ? new Date(Number(tx.timestampMs)).toISOString() : new Date().toISOString(),
+          sender,
+          recipients: [...new Set(recipients)], // Remove duplicates
+          amount,
+          objectChanges: (tx.effects as any)?.objectChanges || []
+        };
+      });
+    } catch (error) {
+      console.error('[IOTA] Failed to fetch transaction history:', error);
+      return [];
+    }
+  }
+
   async requestTokens(address: string): Promise<any> {
     try {
       console.log(`[IOTA] Requesting tokens from faucet for: ${address}`);
