@@ -122,7 +122,7 @@ const Layout: React.FC<LayoutProps> = ({ children, userRole, setUserRole }) => {
       <main className="flex-1 p-6 md:p-10 overflow-y-auto bg-surface transition-colors duration-200">
         {children}
         <footer className="mt-12 text-center text-xs text-slate-400">
-          &copy; 2026 VeriPura&trade; Core | <span className="text-primary hover:underline cursor-pointer" onClick={() => navigate('/terms')}>Terms of Service</span> | <span className="text-primary">www.veripura.com</span>
+          &copy; 2026 VeriPura&trade; Core | <span className="text-primary hover:underline cursor-pointer" onClick={() => navigate('/terms')}>Terms of Service</span> | <span className="text-primary hover:underline cursor-pointer" onClick={() => navigate('/docs')}>Documentation</span>
         </footer>
       </main>
     </div>

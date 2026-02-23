@@ -29,7 +29,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Redirect logic removed in favor of Popup
 
-
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(async (user) => {
             setCurrentUser(user);

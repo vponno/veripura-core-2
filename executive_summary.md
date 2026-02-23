@@ -76,7 +76,7 @@ The Guardian Agent monitors four domains that can **invalidate compliance** or *
 
 | Feature | VeriPura | Traditional Systems |
 | :--- | :--- | :--- |
-| **Intelligence** | AI Guardian per shipment | Static rule engine |
+| **Intelligence** | Agentic Guardian per shipment | Static rule engine |
 | **Trust** | Blockchain-anchored proofs | Database claims |
 | **Adaptability** | Self-correcting via RLHF | Manual updates only |
 | **Compliance** | Real-time regulatory monitoring | Periodic audits |

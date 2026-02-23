@@ -36,7 +36,7 @@ export const analyzeMarketDemand = async (productType: string, historicalData: a
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -125,7 +125,7 @@ export const analyzeGuardianIntent = async (userText: string): Promise<GuardianI
         `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview", // Or 1.5-flash
+      model: "gemini-1.5-flash", // Or 1.5-flash
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -145,7 +145,7 @@ export const analyzeGuardianIntent = async (userText: string): Promise<GuardianI
 
     const text = response.text;
     if (!text) throw new Error("No text response");
-    
+
     try {
       return JSON.parse(text) as GuardianIntent;
     } catch (parseError) {

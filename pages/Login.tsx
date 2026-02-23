@@ -46,14 +46,14 @@ const Login: React.FC = () => {
                 </div>
 
                 <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 mb-6 leading-tight">
-                    The Future of <br />
+                    The Next Era of <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-600 to-purple-600">
-                        Demand-Driven Supply
+                        Trusted Global Trade
                     </span>
                 </h1>
 
                 <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-                    Orchestrate global trade with AI Guardians and on-chain settlement.
+                    Orchestrate global trade with Agentic Guardians and on-chain settlement.
                     From compliance to carbon, ensure every consignment is verified.
                 </p>
 
@@ -70,7 +70,7 @@ const Login: React.FC = () => {
                         Sign in with Google
                     </button>
                     <button
-                        onClick={() => window.open('https://veripura.com', '_blank')}
+                        onClick={() => navigate('/docs')}
                         className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-bold py-4 px-8 rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-3"
                     >
                         Documentation
@@ -108,7 +108,7 @@ const Login: React.FC = () => {
                     <a href="https://www.instagram.com/veri.pura/" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Instagram</a>
                     <a href="https://x.com/VeriPura" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">X</a>
                 </div>
-                &copy; 2026 VeriPura&trade; Core | <span className="text-primary hover:underline cursor-pointer" onClick={() => navigate('/terms')}>Terms of Service</span> | <a href="https://www.veripura.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">www.veripura.com</a>
+                &copy; 2026 VeriPura&trade; Core | <span className="text-primary hover:underline cursor-pointer" onClick={() => navigate('/terms')}>Terms of Service</span> | <span className="text-primary hover:underline cursor-pointer" onClick={() => navigate('/docs')}>Documentation</span>
             </footer>
         </div>
     );
