@@ -48,7 +48,8 @@ export const sanctionsService = {
 
         // 2. Local High-Fidelity Matcher (Fallback/Demo)
         // Normalize text
-        const normalizedText = queryText.toLowerCase();
+        const safeQuery = queryText || "";
+        const normalizedText = safeQuery.toLowerCase();
 
         // Simulate API network latency
         await new Promise(resolve => setTimeout(resolve, 600));

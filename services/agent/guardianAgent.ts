@@ -41,17 +41,17 @@ export class GuardianAgent {
 
         // Initialize and register skills from central registry dynamically
         Object.values(AllSkills).forEach((SkillClass: any) => {
-            // Check if it's a class and has an 'id' or is a Skill implementation
-            // We assume export * means classes are exported.
-            // We exclude SkillRegistry itself to avoid recursion or error
+            // Because of minification and non-class exports, we have to be careful
             if (typeof SkillClass === 'function' && SkillClass.name !== 'SkillRegistry') {
                 try {
+                    // Try to instantiate it. If it's a plain function/arrow function, it might throw.
+                    // We can check if it has a prototype object with functions, but a try/catch works.
                     const skillInstance = new SkillClass();
-                    if ((skillInstance as any).id && (skillInstance as any).execute) {
+                    if (skillInstance && typeof skillInstance === 'object' && 'id' in skillInstance && 'execute' in skillInstance) {
                         this.skillRegistry.register(skillInstance);
                     }
                 } catch (e) {
-                    console.warn(`[GuardianAgent] Failed to instantiate skill ${SkillClass.name}:`, e);
+                    // console.warn(`[GuardianAgent] Skipping non-skill export:`, e);
                 }
             }
         });

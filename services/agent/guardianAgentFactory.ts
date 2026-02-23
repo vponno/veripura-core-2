@@ -45,7 +45,7 @@ export class GuardianAgentFactory {
     public static async hydrate(consignmentId: string): Promise<GuardianAgent | null> {
         try {
             const stateDoc = await getDoc(doc(db, this.STATE_COLLECTION, consignmentId));
-            
+
             if (stateDoc.exists()) {
                 const savedState = stateDoc.data() as { state: AgentState; updatedAt: string };
                 logger.log(`[GuardianAgentFactory] Hydrating agent state for ${consignmentId}`);
@@ -68,13 +68,16 @@ export class GuardianAgentFactory {
         }
 
         const state = agent.getState();
-        
+
+        // Remove undefined values to prevent Firestore errors
+        const sanitizedState = JSON.parse(JSON.stringify(state));
+
         try {
             await setDoc(doc(db, this.STATE_COLLECTION, consignmentId), {
-                state,
+                state: sanitizedState,
                 updatedAt: new Date().toISOString()
             }, { merge: true });
-            
+
             logger.log(`[GuardianAgentFactory] Persisted state for ${consignmentId}`);
         } catch (error) {
             console.error(`[GuardianAgentFactory] Failed to persist:`, error);
@@ -86,7 +89,7 @@ export class GuardianAgentFactory {
         event: AgentEvent
     ): Promise<AgentEventResult> {
         let agent = this.get(consignmentId);
-        
+
         if (!agent) {
             agent = await this.hydrate(consignmentId);
         }
