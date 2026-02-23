@@ -3,14 +3,28 @@ import { ComplianceDocument } from "../types";
 import { Consignment } from './consignmentService';
 import { httpsCallable } from "firebase/functions";
 import { functions } from "./lib/firebase";
+import { logger } from './lib/logger';
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
+// Safe environment variable retrieval
+const getApiKey = () => {
+    // 1. Vite Environment
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
+        return import.meta.env.VITE_GEMINI_API_KEY;
+    }
+    // 2. Node/Webpack Environment
+    if (typeof process !== 'undefined' && process.env) {
+        return process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
+    }
+    return undefined;
+};
+
+const API_KEY = getApiKey();
 
 if (!API_KEY) {
-    console.warn("VITE_GEMINI_API_KEY is not set. Compliance checks will fail.");
+    logger.warn("VITE_GEMINI_API_KEY is not set. Compliance checks will fail.");
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY || '' });
+const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
 // Schema for Gemini Response
 const complianceSchema = {

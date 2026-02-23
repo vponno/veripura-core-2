@@ -1,6 +1,8 @@
 
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { ComplianceDocument } from "../types";
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { logger } from './lib/logger';
 
 // --- Interfaces ---
 
@@ -13,11 +15,27 @@ export interface AnalysisEngine {
 
 // --- Configuration & Schemas (Moved from validationService) ---
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
+// Safe environment variable retrieval
+const getApiKey = () => {
+    // 1. Vite Environment
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
+        return import.meta.env.VITE_GEMINI_API_KEY;
+    }
+    // 2. Node/Webpack Environment
+    if (typeof process !== 'undefined' && process.env) {
+        return process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
+    }
+    return undefined;
+};
+
+const API_KEY = getApiKey();
 
 if (!API_KEY) {
-    console.warn("VITE_GEMINI_API_KEY is not set. Engines dependent on Gemini will fail.");
+    logger.warn("VITE_GEMINI_API_KEY is not set. Engines dependent on Gemini will fail.");
 }
+
+// Initialize the standard SDK as before (for non-LlamaParse tasks)
+const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
 const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {

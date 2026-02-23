@@ -1,15 +1,10 @@
-const isDevelopment = process.env.NODE_ENV !== 'production';
-
+// Removed Development Check for Testing Mode
 export const logger = {
     log: (...args: unknown[]) => {
-        if (isDevelopment) {
-            console.log(...args);
-        }
+        console.log(...args);
     },
     warn: (...args: unknown[]) => {
-        if (isDevelopment) {
-            console.warn(...args);
-        }
+        console.warn(...args);
     },
     error: (...args: unknown[]) => {
         console.error(...args);

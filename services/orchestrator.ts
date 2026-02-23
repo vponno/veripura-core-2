@@ -23,14 +23,30 @@ export class GuardianOrchestrator {
     public static async handlePOUpload(
         context: POUploadContext
     ): Promise<OrchestratorResult> {
-        const { consignmentId, documentType, analysisResult } = context;
+        const { consignmentId, documentType, analysisResult, file } = context;
 
-        logger.log(`[Orchestrator] Handling PO Upload for ${consignmentId}, doc: ${documentType}`);
+        console.log('╔════════════════════════════════════════════════════════════╗');
+        console.log('║ [Orchestrator] 📤 PO UPLOAD STARTED                     ║');
+        console.log('╠════════════════════════════════════════════════════════════╣');
+        console.log(`║ Consignment: ${consignmentId}`);
+        console.log(`║ Document:   ${documentType}`);
+        console.log(`║ File:       ${file?.name || 'N/A'} (${file?.size || 0} bytes)`);
+        console.log(`║ Time:       ${new Date().toISOString()}`);
+        console.log('╚════════════════════════════════════════════════════════════╝');
 
         const consignment = await consignmentService.getConsignment(consignmentId);
         if (!consignment) {
+            console.error(`[Orchestrator] ❌ Consignment not found: ${consignmentId}`);
             throw new Error(`Consignment not found: ${consignmentId}`);
         }
+
+        console.log('[Orchestrator] ✓ Consignment found');
+        console.log('[Orchestrator] Consignment details:', {
+            origin: consignment.exportFrom,
+            destination: consignment.importTo,
+            product: consignment.product || consignment.products?.[0]?.name,
+            hsCode: consignment.hsCode || consignment.products?.[0]?.hsCode,
+        });
 
         const shipmentContext = {
             origin: consignment.exportFrom,
@@ -40,17 +56,24 @@ export class GuardianOrchestrator {
             attributes: consignment.products?.[0]?.attributes || []
         };
 
+        console.log('[Orchestrator] → Passing to Guardian Agent...');
+
         let agentResult: AgentEventResult;
 
         try {
+            console.log('[Orchestrator] Awaiting Guardian Agent response...');
             agentResult = await processPOUpload(
                 consignmentId,
                 documentType,
                 analysisResult,
                 shipmentContext
             );
+            console.log('[Orchestrator] ✓ Guardian Agent processing complete');
         } catch (error) {
-            console.error(`[Orchestrator] Agent processing failed:`, error);
+            console.error('╔════════════════════════════════════════════════════════════╗');
+            console.error('║ [Orchestrator] ❌ AGENT PROCESSING FAILED                ║');
+            console.error('╚════════════════════════════════════════════════════════════╝');
+            console.error(error);
             agentResult = {
                 success: false,
                 response: 'Agent processing failed, falling back to basic analysis',
@@ -59,6 +82,7 @@ export class GuardianOrchestrator {
             };
         }
 
+        console.log('[Orchestrator] Computing roadmap updates...');
         const roadmapUpdates = this.computeRoadmapUpdates(
             documentType,
             analysisResult,
@@ -69,6 +93,15 @@ export class GuardianOrchestrator {
             lastActive: new Date().toISOString(),
             activityLog: agentResult.activityLog
         };
+
+        console.log('╔════════════════════════════════════════════════════════════╗');
+        console.log('║ [Orchestrator] ✅ PO UPLOAD COMPLETE                     ║');
+        console.log('╠════════════════════════════════════════════════════════════╣');
+        console.log(`║ Success:      ${agentResult.success}`);
+        console.log(`║ Alerts:       ${agentResult.alerts?.length || 0}`);
+        console.log(`║ Activity:     ${agentResult.activityLog?.length || 0} entries`);
+        console.log(`║ Required Doc: ${agentResult.requiredDocuments?.length || 0}`);
+        console.log('╚════════════════════════════════════════════════════════════╝');
 
         return {
             ...agentResult,
@@ -85,7 +118,14 @@ export class GuardianOrchestrator {
         newDestination: string,
         changedFactId?: string
     ): Promise<OrchestratorResult> {
-        logger.log(`[Orchestrator] Handling Route Update for ${consignmentId}`);
+        console.log('╔════════════════════════════════════════════════════════════╗');
+        console.log('║ [Orchestrator] 🔄 ROUTE UPDATE STARTED                   ║');
+        console.log('╠════════════════════════════════════════════════════════════╣');
+        console.log(`║ Consignment:  ${consignmentId}`);
+        console.log(`║ New Origin:   ${newOrigin}`);
+        console.log(`║ New Dest:     ${newDestination}`);
+        console.log(`║ Fact Changed: ${changedFactId || 'N/A'}`);
+        console.log('╚════════════════════════════════════════════════════════════╝');
 
         let agentResult: AgentEventResult;
 
@@ -96,8 +136,12 @@ export class GuardianOrchestrator {
                 newDestination,
                 changedFactId
             );
+            console.log('[Orchestrator] ✓ Route update processed');
         } catch (error) {
-            console.error(`[Orchestrator] Route update agent processing failed:`, error);
+            console.error('╔════════════════════════════════════════════════════════════╗');
+            console.error('║ [Orchestrator] ❌ ROUTE UPDATE FAILED                   ║');
+            console.error('╚════════════════════════════════════════════════════════════╝');
+            console.error(error);
             agentResult = {
                 success: false,
                 response: 'Route update processing failed',
@@ -121,14 +165,23 @@ export class GuardianOrchestrator {
         consignmentId: string,
         message: string
     ): Promise<OrchestratorResult> {
-        logger.log(`[Orchestrator] Handling User Message for ${consignmentId}`);
+        console.log('╔════════════════════════════════════════════════════════════╗');
+        console.log('║ [Orchestrator] 💬 USER MESSAGE RECEIVED                 ║');
+        console.log('╠════════════════════════════════════════════════════════════╣');
+        console.log(`║ Consignment: ${consignmentId}`);
+        console.log(`║ Message:    "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`);
+        console.log('╚════════════════════════════════════════════════════════════╝');
 
         let agentResult: AgentEventResult;
 
         try {
             agentResult = await processUserMessage(consignmentId, message);
+            console.log('[Orchestrator] ✓ Message processed');
         } catch (error) {
-            console.error(`[Orchestrator] Message processing failed:`, error);
+            console.error('╔════════════════════════════════════════════════════════════╗');
+            console.error('║ [Orchestrator] ❌ MESSAGE PROCESSING FAILED              ║');
+            console.error('╚════════════════════════════════════════════════════════════╝');
+            console.error(error);
             agentResult = {
                 success: false,
                 response: 'Message processing failed',
@@ -167,6 +220,8 @@ export class GuardianOrchestrator {
             status = 'Pending Review';
         }
 
+        console.log('[Orchestrator] Validation result:', { validationLevel, status });
+
         const updates: any = {
             [documentType]: {
                 status,
@@ -182,9 +237,10 @@ export class GuardianOrchestrator {
 
         // Add required documents from Guardian Agent sub-agents
         if (agentResult.requiredDocuments && agentResult.requiredDocuments.length > 0) {
-            logger.log(`[Orchestrator] Adding ${agentResult.requiredDocuments.length} required documents from Guardian Agent`);
+            console.log(`[Orchestrator] 📄 Adding ${agentResult.requiredDocuments.length} required documents:`);
             
             agentResult.requiredDocuments.forEach(doc => {
+                console.log(`[Orchestrator]   + ${doc.name}: ${doc.description || doc.reason}`);
                 if (!updates[doc.name]) {
                     updates[doc.name] = {
                         required: true,
@@ -210,6 +266,15 @@ export class GuardianOrchestrator {
             guardianAgent?: any;
         }
     ): Promise<void> {
+        console.log('╔════════════════════════════════════════════════════════════╗');
+        console.log('║ [Orchestrator] 💾 APPLYING DATABASE UPDATES               ║');
+        console.log('╠════════════════════════════════════════════════════════════╣');
+        console.log(`║ Consignment: ${consignmentId}`);
+        console.log(`║ Roadmap:    ${updates.roadmap ? 'Yes' : 'No'}`);
+        console.log(`║ AgentState: ${updates.agentState ? 'Yes' : 'No'}`);
+        console.log(`║ Guardian:   ${updates.guardianAgent ? 'Yes' : 'No'}`);
+        console.log('╚════════════════════════════════════════════════════════════╝');
+
         const updatePayload: any = {};
 
         if (updates.roadmap) {
@@ -219,18 +284,24 @@ export class GuardianOrchestrator {
                 ...currentRoadmap,
                 ...updates.roadmap
             };
+            console.log('[Orchestrator] ✓ Roadmap merged');
         }
 
         if (updates.agentState) {
             updatePayload.agentState = updates.agentState;
+            console.log('[Orchestrator] ✓ Agent state updated');
         }
 
         if (updates.guardianAgent) {
             updatePayload.guardianAgent = updates.guardianAgent;
+            console.log('[Orchestrator] ✓ Guardian Agent state updated');
         }
 
         await consignmentService.updateConsignment(consignmentId, updatePayload);
-        logger.log(`[Orchestrator] Applied updates for ${consignmentId}`);
+        
+        console.log('╔════════════════════════════════════════════════════════════╗');
+        console.log('║ [Orchestrator] ✅ DATABASE UPDATES COMPLETE              ║');
+        console.log('╚════════════════════════════════════════════════════════════╝');
     }
 }
 

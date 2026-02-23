@@ -11,7 +11,6 @@ import { SubAgent } from './subAgent';
 import { logger } from '../lib/logger';
 import { SubAgentFactory } from './subAgentFactory';
 import { SkillRegistry } from './skills';
-import * as AllSkills from './skills';
 import { ActiveDefenseConfig, DEFAULT_RISK_CONFIG } from './activeDefense/riskModel';
 import { v4 as uuidv4 } from 'uuid';
 import { Skill } from './skills/skillRegistry';
@@ -24,7 +23,7 @@ export class GuardianAgent {
 
     // Dynamic Registries
     private subAgents: Map<string, SubAgent> = new Map();
-    public skillRegistry: SkillRegistry = new SkillRegistry();
+    public skillRegistry: SkillRegistry;
 
     // Active Defense Config (Dynamic)
     private activeDefenseConfig: ActiveDefenseConfig;
@@ -39,21 +38,20 @@ export class GuardianAgent {
         this.graph = DependencyGraph.deserialize(this.state.memory.knowledgeGraph);
         this.activeDefenseConfig = riskConfig;
 
-        // Initialize and register skills from central registry dynamically
-        Object.values(AllSkills).forEach((SkillClass: any) => {
-            // Because of minification and non-class exports, we have to be careful
-            if (typeof SkillClass === 'function' && SkillClass.name !== 'SkillRegistry') {
-                try {
-                    // Try to instantiate it. If it's a plain function/arrow function, it might throw.
-                    // We can check if it has a prototype object with functions, but a try/catch works.
-                    const skillInstance = new SkillClass();
-                    if (skillInstance && typeof skillInstance === 'object' && 'id' in skillInstance && 'execute' in skillInstance) {
-                        this.skillRegistry.register(skillInstance);
-                    }
-                } catch (e) {
-                    // console.warn(`[GuardianAgent] Skipping non-skill export:`, e);
-                }
-            }
+        // SkillRegistry now auto-discovers skills from ./skills/index.ts
+        this.skillRegistry = new SkillRegistry();
+
+        // Diagnostic: Log loaded skills
+        const allSkills = this.skillRegistry.list();
+        logger.log(`[GuardianAgent ${this.id}] Initialized with ${allSkills.length} skills:`);
+        const byCategory: Record<string, string[]> = {};
+        allSkills.forEach(skill => {
+            const cat = skill.category || 'uncategorized';
+            if (!byCategory[cat]) byCategory[cat] = [];
+            byCategory[cat].push(skill.id);
+        });
+        Object.entries(byCategory).forEach(([cat, skills]) => {
+            logger.log(`  [${cat}]: ${skills.join(', ')}`);
         });
     }
 
@@ -148,7 +146,14 @@ export class GuardianAgent {
         this.state.status = 'processing';
         this.state.lastActive = new Date().toISOString();
 
-        logger.log(`[GuardianAgent ${this.id}] Processing Event: ${event.type}`);
+        logger.log(`╔════════════════════════════════════════════════════════════╗`);
+        logger.log(`║ [GuardianAgent ${this.id}] NEW EVENT RECEIVED               ║`);
+        logger.log(`╠════════════════════════════════════════════════════════════╣`);
+        logger.log(`║ Type: ${event.type.padEnd(50)}║`);
+        logger.log(`║ ID:   ${event.id.padEnd(50)}║`);
+        logger.log(`║ Time: ${event.timestamp || new Date().toISOString().padEnd(50)}║`);
+        logger.log(`╚════════════════════════════════════════════════════════════╝`);
+        logger.log(`[GuardianAgent] Event payload:`, JSON.stringify(event.payload, null, 2));
 
         // Automated Sync before processing
         this.synchronizeSubAgents();

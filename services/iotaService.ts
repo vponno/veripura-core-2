@@ -17,21 +17,34 @@ class IotaService {
     this.client = new IotaClient({
       url: (import.meta.env && import.meta.env.VITE_IOTA_NODE_URL) || 'https://api.testnet.iota.cafe',
     });
+    
+    console.log('╔════════════════════════════════════════════════════════════╗');
+    console.log('║ [IOTA Service] Initialized                                ║');
+    console.log('║ Node URL:', (import.meta.env && import.meta.env.VITE_IOTA_NODE_URL) || 'https://api.testnet.iota.cafe');
+    console.log('║ Package ID:', import.meta.env.VITE_IOTA_PACKAGE_ID || '(not set - using mock mode)');
+    console.log('╚════════════════════════════════════════════════════════════╝');
   }
 
   async getNodeInfo() {
     try {
       const info = await this.client.getProtocolConfig();
+      console.log('╔════════════════════════════════════════════════════════════╗');
+      console.log('║ [IOTA] Node Info Received                                ║');
+      console.log('╚════════════════════════════════════════════════════════════╝');
       logger.log('IOTA Node Info:', info);
       return info;
     } catch (error) {
-      console.error('Failed to connect to IOTA Node:', error);
+      console.error('╔════════════════════════════════════════════════════════════╗');
+      console.error('║ [IOTA] ❌ Failed to connect to Node                      ║');
+      console.error('╚════════════════════════════════════════════════════════════╝');
+      console.error(error);
       throw error;
     }
   }
 
   async getOwnedObjects(address: string): Promise<Consignment[]> {
     try {
+      console.log(`[IOTA] Fetching objects for address: ${address}`);
       const packageId = import.meta.env.VITE_IOTA_PACKAGE_ID || '0x0';
       const response = await this.client.getOwnedObjects({
         owner: address,
@@ -39,6 +52,7 @@ class IotaService {
         options: { showContent: true, showType: true, showOwner: true }
       });
 
+      console.log(`[IOTA] Found ${response.data.length} objects`);
       return response.data.map(obj => {
         if (obj.data?.content?.dataType === 'moveObject') {
           const fields = obj.data.content.fields as any;
@@ -62,37 +76,52 @@ class IotaService {
         return null;
       }).filter((o): o is Consignment => o !== null);
     } catch (error) {
-      console.warn('Failed to fetch from IOTA network, falling back to empty list:', error);
+      console.warn('╔════════════════════════════════════════════════════════════╗');
+      console.warn('║ [IOTA] ⚠️ Failed to fetch from IOTA network              ║');
+      console.warn('║ Falling back to empty list                               ║');
+      console.warn('╚════════════════════════════════════════════════════════════╝');
+      console.warn(error);
       return [];
     }
   }
   async createBurnerWallet(): Promise<{ address: string; privateKey: string }> {
+    console.log('[IOTA] Creating burner wallet...');
     const keypair = new Ed25519Keypair();
+    const address = keypair.getPublicKey().toIotaAddress();
+    console.log('[IOTA] ✓ Burner wallet created:', address);
     return {
-      address: keypair.getPublicKey().toIotaAddress(),
+      address,
       privateKey: keypair.getSecretKey(),
     };
   }
 
   async getAddressBalance(address: string): Promise<number> {
     try {
+      console.log(`[IOTA] Checking balance for: ${address}`);
       const balance = await this.client.getBalance({ owner: address });
-      return parseInt(balance.totalBalance);
+      const bal = parseInt(balance.totalBalance);
+      console.log(`[IOTA] Balance: ${bal} raw (${bal / 1_000_000} IOTA)`);
+      return bal;
     } catch (error) {
-      console.error('Failed to fetch balance:', error);
+      console.error('[IOTA] Failed to fetch balance:', error);
       return 0;
     }
   }
 
   async requestTokens(address: string): Promise<any> {
     try {
+      console.log(`[IOTA] Requesting tokens from faucet for: ${address}`);
       const response = await requestIotaFromFaucetV0({
         host: getFaucetHost('testnet'),
         recipient: address,
       });
+      console.log('[IOTA] ✓ Faucet request successful');
       return response;
     } catch (error) {
-      console.error("Faucet Request Failed", error);
+      console.error("╔════════════════════════════════════════════════════════════╗");
+      console.error("║ [IOTA] ❌ Faucet Request Failed                          ║");
+      console.error("╚════════════════════════════════════════════════════════════╝");
+      console.error(error);
       throw error;
     }
   }
@@ -105,14 +134,20 @@ class IotaService {
     privateKey: string,
     documentHash: string,
     metadata?: { consignmentId?: string; docType?: string }
-  ): Promise<{ digest: string; explorerUrl: string }> {
+  ): Promise<{ digest: string; explorerUrl: string; txCost?: string }> {
     try {
-      logger.log('[IOTA Anchor] Starting document hash anchoring...');
+      console.log('╔════════════════════════════════════════════════════════════╗');
+      console.log('║ [IOTA Anchor] STARTING DOCUMENT HASH ANCHORING          ║');
+      console.log('╠════════════════════════════════════════════════════════════╣');
+      console.log(`║ Document Hash: ${documentHash.substring(0, 30)}...`);
+      console.log(`║ Consignment:   ${metadata?.consignmentId || 'N/A'}`);
+      console.log(`║ Doc Type:      ${metadata?.docType || 'N/A'}`);
+      console.log('╚════════════════════════════════════════════════════════════╝');
 
       // Handle both bech32 (iotaprivkey1...) and raw format keys
       let keypair: Ed25519Keypair;
       if (privateKey.startsWith('iotaprivkey')) {
-        logger.log('[IOTA Anchor] Decoding bech32 private key...');
+        console.log('[IOTA Anchor] Decoding bech32 private key...');
         const decoded = decodeIotaPrivateKey(privateKey);
         keypair = Ed25519Keypair.fromSecretKey(decoded.secretKey);
       } else {
@@ -120,16 +155,20 @@ class IotaService {
       }
 
       const address = keypair.getPublicKey().toIotaAddress();
+      console.log('[IOTA Anchor] Sender address:', address);
 
       // Check balance first
       const balance = await this.getAddressBalance(address);
-      logger.log(`[IOTA Anchor] Address: ${address}, Balance: ${balance}`);
+      console.log(`[IOTA Anchor] Current balance: ${balance} raw`);
 
       if (balance < 1000000) { // Need at least some IOTA for gas
-        logger.log('[IOTA Anchor] Low balance, requesting tokens...');
+        console.log('[IOTA Anchor] ⚠️ Low balance, requesting tokens from faucet...');
         await this.requestTokens(address);
         // Wait a bit for faucet to process
         await new Promise(r => setTimeout(r, 3000));
+        console.log('[IOTA Anchor] ✓ Tokens received');
+      } else {
+        console.log('[IOTA Anchor] ✓ Balance sufficient');
       }
 
       // Create transaction with document hash in the data
@@ -140,6 +179,7 @@ class IotaService {
       if (coins.data.length === 0) {
         throw new Error('No coins available for transaction');
       }
+      console.log(`[IOTA Anchor] Found ${coins.data.length} coins to use`);
 
       // Create a minimal self-transfer to anchor the hash
       // The hash is embedded in the transaction metadata
@@ -148,6 +188,7 @@ class IotaService {
 
       // Set gas budget
       txb.setGasBudget(10000000);
+      console.log('[IOTA Anchor] Transaction prepared, executing...');
 
       // Execute the transaction
       const result = await this.client.signAndExecuteTransaction({
@@ -159,21 +200,41 @@ class IotaService {
         }
       });
 
-      logger.log('[IOTA Anchor] Transaction submitted:', result.digest);
+      console.log('[IOTA Anchor] ✓ Transaction submitted, digest:', result.digest.substring(0, 20) + '...');
 
       // Wait for confirmation
       await this.client.waitForTransaction({ digest: result.digest });
+      console.log('[IOTA Anchor] ✓ Transaction confirmed');
 
       const explorerUrl = `https://explorer.rebased.iota.org/txblock/${result.digest}?network=testnet`;
 
-      logger.log('[IOTA Anchor] Success! Explorer URL:', explorerUrl);
+      // Extract transaction cost (gas used)
+      let txCost = "0.00";
+      if (result.effects?.gasUsed) {
+        const { computationCost, storageCost, storageRebate } = result.effects.gasUsed;
+        const totalCost = (BigInt(computationCost) + BigInt(storageCost)) - BigInt(storageRebate);
+        // Convert from MIST (10^-9 IOTA) to IOTA (approximately, assuming totalCost is small) 
+        txCost = (Number(totalCost) / 1_000_000_000).toFixed(6);
+      }
+
+      console.log('╔════════════════════════════════════════════════════════════╗');
+      console.log('║ [IOTA Anchor] ✓ SUCCESS! ANCHORED ON-CHAIN              ║');
+      console.log('╠════════════════════════════════════════════════════════════╣');
+      console.log(`║ Digest:     ${result.digest.substring(0, 40)}...`);
+      console.log(`║ Explorer:   ${explorerUrl}`);
+      console.log(`║ TX Cost:    ${txCost} IOTA`);
+      console.log('╚════════════════════════════════════════════════════════════╝');
 
       return {
         digest: result.digest,
-        explorerUrl
+        explorerUrl,
+        txCost
       };
     } catch (error) {
-      console.error('[IOTA Anchor] Failed to anchor document hash:', error);
+      console.error('╔════════════════════════════════════════════════════════════╗');
+      console.error('║ [IOTA Anchor] ❌ FAILED TO ANCHOR DOCUMENT HASH         ║');
+      console.error('╚════════════════════════════════════════════════════════════╝');
+      console.error(error);
       throw error;
     }
   }
@@ -187,7 +248,12 @@ class IotaService {
     merkleRoot: string,
     consignmentId: string
   ): Promise<{ digest: string; explorerUrl: string }> {
-    logger.log(`[IOTA Anchor] Anchoring Merkle Root for Consignment ${consignmentId}: ${merkleRoot}`);
+    console.log('╔════════════════════════════════════════════════════════════╗');
+    console.log('║ [IOTA Anchor] MERKLE ROOT ANCHORING                     ║');
+    console.log('╠════════════════════════════════════════════════════════════╣');
+    console.log(`║ Consignment: ${consignmentId}`);
+    console.log(`║ Merkle Root: ${merkleRoot.substring(0, 30)}...`);
+    console.log('╚════════════════════════════════════════════════════════════╝');
     // We repurpose the document anchor logic since the mechanism (data payload in transaction) is identical.
     // The "documentHash" is simply the "merkleRoot".
     return this.anchorDocumentHash(privateKey, merkleRoot, { consignmentId, docType: 'MERKLE_ROOT' });
@@ -217,13 +283,26 @@ class IotaService {
     const packageId = import.meta.env.VITE_IOTA_PACKAGE_ID;
     const moduleName = 'supply_chain';
 
+    console.log('╔════════════════════════════════════════════════════════════╗');
+    console.log('║ [IOTA] Registering Consignment (LEAN MODE)               ║');
+    console.log('╠════════════════════════════════════════════════════════════╣');
+    console.log(`║ Internal ID:   ${internalId}`);
+    console.log(`║ Seller:        ${details.sellerName}`);
+    console.log(`║ Buyer:         ${details.buyerName}`);
+    console.log(`║ Origin:        ${details.originCountry}`);
+    console.log(`║ Destination:   ${details.destinationCountry}`);
+    console.log(`║ Products:      ${details.products.join(', ')}`);
+    console.log(`║ Package ID:    ${packageId || '(not set - using mock)'}`);
+    console.log('╚════════════════════════════════════════════════════════════╝');
+
     // Compute Hash (Lean Storage)
     const dataHash = await this.computeDataHash(details);
+    console.log('[IOTA] Computed data hash:', Array.from(dataHash).slice(0, 10), '...');
 
     // 1. If Package ID exists, try Real Transaction
     if (packageId) {
       try {
-        logger.log("Registering Consignment (LEAN) on IOTA Network...", packageId);
+        console.log("[IOTA] Executing real Move transaction...");
         const keypair = Ed25519Keypair.fromSecretKey(signerPrivateKey);
         const txb = new Transaction();
 
@@ -244,7 +323,7 @@ class IotaService {
           }
         });
 
-        logger.log("Transaction Result:", result);
+        console.log("[IOTA] ✓ Transaction executed, digest:", result.digest.substring(0, 20) + '...');
 
         // Return a constructed object since we rely on the chain now
         return {
@@ -263,12 +342,15 @@ class IotaService {
         } as any;
 
       } catch (e) {
-        console.error("Real IOTA Transaction Failed:", e);
+        console.error("╔════════════════════════════════════════════════════════════╗");
+        console.error("║ [IOTA] ❌ Real IOTA Transaction Failed                   ║");
+        console.error("╚════════════════════════════════════════════════════════════╝");
+        console.error(e);
         throw e;
       }
     } else {
       // 2. Fallback to Mock 
-      logger.log("Simulating Registration (Lean Mode)");
+      console.log("[IOTA] ⚠️ Package ID not set - Using MOCK registration");
       await new Promise(r => setTimeout(r, 2000));
 
       return {
@@ -300,6 +382,10 @@ class IotaService {
     }
   ): Promise<{ digest: string; explorerUrl: string }> {
     try {
+      console.log('╔════════════════════════════════════════════════════════════╗');
+      console.log('║ [IOTA] Creating Supply Contract                         ║');
+      console.log('╚════════════════════════════════════════════════════════════╝');
+      
       // Handle keypair
       let keypair: Ed25519Keypair;
       if (signerPrivateKey.startsWith('iotaprivkey')) {
@@ -313,7 +399,7 @@ class IotaService {
       // Check balance
       const balance = await this.getAddressBalance(address);
       if (balance < 5000000) { // 0.005 IOTA
-        logger.log('Requesting content for gas...');
+        console.log('[IOTA] Low balance, requesting tokens...');
         await this.requestTokens(address);
         await new Promise(r => setTimeout(r, 2000));
       }
@@ -322,7 +408,7 @@ class IotaService {
 
       // OPTION A: Smart Contract Call
       if (packageId) {
-        logger.log("Creating Contract via Move Call...", packageId);
+        console.log("[IOTA] Executing Move call to:", packageId);
         const txb = new Transaction();
         txb.moveCall({
           target: `${packageId}::supply_chain::create_contract`,
@@ -348,7 +434,7 @@ class IotaService {
       }
 
       // OPTION B: Data Anchor (Fallback)
-      logger.log("Package ID not found. Fallback to Data Anchoring.");
+      console.log("[IOTA] Package ID not found - Fallback to Data Anchoring");
       const txb = new Transaction();
 
       // Send 0 value to Buyer, but include Contract Data in the inputs/structure
@@ -370,7 +456,10 @@ class IotaService {
       };
 
     } catch (error) {
-      console.error("Create Supply Contract Failed:", error);
+      console.error("╔════════════════════════════════════════════════════════════╗");
+      console.error("║ [IOTA] ❌ Create Supply Contract Failed                  ║");
+      console.error("╚════════════════════════════════════════════════════════════╝");
+      console.error(error);
       throw error;
     }
   }

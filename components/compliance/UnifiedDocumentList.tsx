@@ -28,6 +28,8 @@ interface DocumentItem {
     fileUrl?: string;
     iotaExplorerUrl?: string;
     iotaTxHash?: string;
+    iotaTxCost?: string;
+    iotaError?: string;
     analysis?: any;
 }
 
@@ -216,15 +218,40 @@ export const UnifiedDocumentList: React.FC<UnifiedDocumentListProps> = ({
                                             {doc.status === 'Pending Review' ? 'Review' : 'View'}
                                         </button>
 
+                                        {doc.iotaError && doc.status === 'Validated' && (
+                                            <div className="flex flex-col gap-1 mt-1">
+                                                <span className="text-[10px] text-red-600 bg-red-50 px-2 py-1 rounded border border-red-100 flex items-center gap-1 leading-tight">
+                                                    <XCircle size={10} /> {doc.iotaError}
+                                                </span>
+                                                {doc.iotaError.toLowerCase().includes('balance') || doc.iotaError.toLowerCase().includes('coin') || doc.iotaError.toLowerCase().includes('fund') ? (
+                                                    <a
+                                                        href="https://faucet.testnet.iota.cafe"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-[10px] bg-slate-800 text-white px-2 py-1.5 rounded font-medium hover:bg-slate-700 text-center"
+                                                    >
+                                                        Fund Wallet via Faucet
+                                                    </a>
+                                                ) : null}
+                                            </div>
+                                        )}
+
                                         {doc.iotaExplorerUrl && doc.status === 'Validated' && (
-                                            <a
-                                                href={doc.iotaExplorerUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-xs bg-blue-50 text-blue-700 px-3 py-2 rounded-lg border border-blue-100 font-medium hover:bg-blue-100 flex items-center gap-1.5 whitespace-nowrap"
-                                            >
-                                                <ExternalLink size={12} /> Proof
-                                            </a>
+                                            <div className="flex items-center gap-2">
+                                                <a
+                                                    href={doc.iotaExplorerUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs bg-blue-50 text-blue-700 px-3 py-2 rounded-lg border border-blue-100 font-medium hover:bg-blue-100 flex items-center gap-1.5 whitespace-nowrap"
+                                                >
+                                                    <ExternalLink size={12} /> Proof
+                                                </a>
+                                                {doc.iotaTxCost && (
+                                                    <span className="text-[10px] text-slate-500 font-medium bg-slate-50 px-2 py-1 rounded border border-slate-100">
+                                                        Cost: {doc.iotaTxCost} IOTA
+                                                    </span>
+                                                )}
+                                            </div>
                                         )}
 
                                         {doc.agencyLink && doc.agencyLink !== 'N/A' && (
@@ -308,6 +335,22 @@ export const UnifiedDocumentList: React.FC<UnifiedDocumentListProps> = ({
 
     return (
         <div className="space-y-6">
+            {/* Validated Documents (Moved to Top) */}
+            {validated.length > 0 && (
+                <div>
+                    <div className="flex items-center gap-2 mb-4">
+                        <CheckCircle className="w-5 h-5 text-emerald-600" />
+                        <h4 className="font-bold text-emerald-700">Validated ({validated.length})</h4>
+                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                            Encrypted & Anchored
+                        </span>
+                    </div>
+                    <div className="space-y-3">
+                        {validated.map(renderDocumentCard)}
+                    </div>
+                </div>
+            )}
+
             {/* Pending Documents */}
             {pending.length > 0 && (
                 <div>
@@ -336,22 +379,6 @@ export const UnifiedDocumentList: React.FC<UnifiedDocumentListProps> = ({
                     </div>
                     <div className="space-y-3">
                         {reviewing.map(renderDocumentCard)}
-                    </div>
-                </div>
-            )}
-
-            {/* Validated Documents */}
-            {validated.length > 0 && (
-                <div>
-                    <div className="flex items-center gap-2 mb-4">
-                        <CheckCircle className="w-5 h-5 text-emerald-600" />
-                        <h4 className="font-bold text-emerald-700">Validated ({validated.length})</h4>
-                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                            Encrypted & Anchored
-                        </span>
-                    </div>
-                    <div className="space-y-3">
-                        {validated.map(renderDocumentCard)}
                     </div>
                 </div>
             )}

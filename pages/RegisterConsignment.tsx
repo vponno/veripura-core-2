@@ -887,6 +887,8 @@ const RegisterConsignment: React.FC = () => {
         fileUrl: data.fileUrl,
         iotaExplorerUrl: data.iotaExplorerUrl,
         iotaTxHash: data.iotaTxHash,
+        iotaTxCost: data.iotaTxCost,
+        iotaError: data.iotaError,
         analysis: data.analysis
     }));
 

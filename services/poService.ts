@@ -24,6 +24,7 @@ export interface POUploadResult {
     documentHash?: string;
     iotaTxHash?: string;
     iotaExplorerUrl?: string;
+    iotaTxCost?: string;
     flagged: boolean;
     agentResult?: any;
     updates?: any;
@@ -46,10 +47,10 @@ export const poService = {
 
         const simpleName = `PurchaseOrder_${Date.now()}.enc`;
         const storagePath = `consignments/${consignmentId}/${simpleName}`;
-        
+
         const { ref: storageRef, uploadBytes, getDownloadURL } = await import('firebase/storage');
         const { storage } = await import('./lib/firebase');
-        
+
         const fileRef = await import('firebase/storage').then(f => f.ref(storage, storagePath));
         await uploadBytes(fileRef, encryptedBlob, { contentType: 'application/octet-stream' });
         const fileUrl = await getDownloadURL(fileRef);
@@ -58,6 +59,8 @@ export const poService = {
 
         let iotaTxHash: string | undefined;
         let iotaExplorerUrl: string | undefined;
+        let iotaTxCost: string | undefined;
+        let iotaError: string | undefined;
 
         try {
             const ownerId = consignment.ownerId;
@@ -73,10 +76,12 @@ export const poService = {
                     );
                     iotaTxHash = anchorResult.digest;
                     iotaExplorerUrl = anchorResult.explorerUrl;
+                    iotaTxCost = anchorResult.txCost;
                 }
             }
-        } catch (iotaError) {
-            console.warn('[POService] IOTA anchoring failed:', iotaError);
+        } catch (error: any) {
+            console.warn('[POService] IOTA anchoring failed:', error);
+            iotaError = `Anchoring failed: ${error.message || 'Unknown error. Check wallet balance.'}`;
         }
 
         const orchestratorResult = await orchestratorService.handlePOUpload({
@@ -97,6 +102,8 @@ export const poService = {
                 documentHash,
                 iotaTxHash: iotaTxHash || null,
                 iotaExplorerUrl: iotaExplorerUrl || null,
+                iotaTxCost: iotaTxCost || null,
+                iotaError: iotaError || null,
                 uploadedAt: new Date().toISOString()
             }
         };
@@ -111,6 +118,7 @@ export const poService = {
             documentHash,
             iotaTxHash,
             iotaExplorerUrl,
+            iotaTxCost,
             flagged,
             agentResult: {
                 response: orchestratorResult.response,
