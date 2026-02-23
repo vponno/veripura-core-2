@@ -12,9 +12,9 @@ export class ModelRegistry {
     private constructor() {
         // Register default "Expert" models
         // In a real app, these might be loaded from a config file or env vars
-        this.register('default', { provider: 'vertex', modelId: 'gemini-1.5-flash' });
+        this.register('default', { provider: 'vertex', modelId: 'gemini-2.5-flash' });
         this.register('vision-pro', { provider: 'huggingface', modelId: 'Qwen/Qwen2.5-VL-72B-Instruct' });
-        this.register('vision-fast', { provider: 'vertex', modelId: 'gemini-1.5-flash' }); // Good fallback
+        this.register('vision-fast', { provider: 'vertex', modelId: 'gemini-2.5-flash' }); // Good fallback
         this.register('legal-expert', { provider: 'huggingface', modelId: 'nlpaueb/legal-bert-base-uncased' });
         this.register('doc-parser', { provider: 'huggingface', modelId: 'ibm/docling' }); // Evaluation mode
     }

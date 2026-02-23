@@ -36,7 +36,7 @@ export const analyzeMarketDemand = async (productType: string, historicalData: a
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -125,7 +125,7 @@ export const analyzeGuardianIntent = async (userText: string): Promise<GuardianI
         `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash", // Or 1.5-flash
+      model: "gemini-2.5-flash", // Or 1.5-flash
       contents: prompt,
       config: {
         responseMimeType: "application/json",
