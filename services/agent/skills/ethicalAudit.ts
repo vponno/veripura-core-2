@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface EthicalAuditInput {
     standard: 'BSCI' | 'Fairtrade' | 'Rainforest Alliance' | 'Sedex';
@@ -15,6 +16,7 @@ export class EthicalAuditSkill implements Skill {
     id = 'ethical_audit';
     name = 'Ethical Audit Specialist';
     description = 'Grades social and ethical compliance audits based on global benchmarks.';
+    public category = SkillCategory.STANDARDS;
 
     async execute(input: EthicalAuditInput): Promise<SkillResult> {
         const { standard, score } = input;

@@ -1,9 +1,11 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export class RiskDatabaseSkill implements Skill {
     id = 'risk_database';
     name = 'Risk Database Lookup';
     description = 'Checks specific risk databases for bio-security and insurance risks.';
+    public category = SkillCategory.SCIENTIFIC;
 
     async execute(payload: any): Promise<SkillResult> {
         const { domain, query } = payload;

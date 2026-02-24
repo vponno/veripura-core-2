@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface CreditRiskInput {
     supplierId: string;
@@ -24,6 +25,7 @@ export class CreditRiskSkill implements Skill {
     id = 'credit_risk';
     name = 'Credit Risk Analyzer';
     description = 'Evaluates supplier financial health and bankruptcy risk using credit bureau data (Dun & Bradstreet / Coface).';
+    public category = SkillCategory.FINANCIAL;
 
     private mockCreditDatabase: Map<string, CreditProfile> = new Map([
         ['SUP001', { supplierId: 'SUP001', score: 75, rating: 'A', bankruptcyRisk: 'low', lastUpdated: '2024-01-15', financialHighlights: { revenue: 50000000, employees: 250, yearsInBusiness: 15 } }],

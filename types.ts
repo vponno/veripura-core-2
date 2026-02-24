@@ -247,6 +247,7 @@ export interface AgentAlert {
   suggestedAction?: string;
   actions?: AgentAction[];
   confidence?: number; // 0.0 to 1.0 - AI's certainty
+  reasonCode?: 'UNCLEAR_INFO' | 'TAMPERING' | 'HANDWRITTEN_INFO' | 'LOW_CONFIDENCE' | 'EXPIRED_CERT' | 'MANUAL_VERIFY';
 }
 
 export interface RLHFReviewCase {

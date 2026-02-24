@@ -1,6 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ExtractedPOData, ChecklistItem, DocumentType } from '../../types';
 
+function extractResponseText(response: any): string {
+  if (typeof response?.text === 'function') {
+    return response.text();
+  }
+  return response?.text ?? '';
+}
+
 // Lazy init to prevent crash on load if key is missing
 let aiInstance: GoogleGenAI | null = null;
 
@@ -107,8 +114,7 @@ Your entire response must be a single JSON object that strictly adheres to the p
     }
   });
 
-  // @ts-ignore
-  const jsonText = typeof (response as any).text === 'function' ? (response as any).text() : response.text;
+  const jsonText = extractResponseText(response);
 
   try {
     const parsedJson = JSON.parse(jsonText);
@@ -143,8 +149,7 @@ export const generateDraftDocument = async (data: ExtractedPOData, documentType:
     contents: prompt,
   });
 
-  // @ts-ignore
-  const text = typeof (response as any).text === 'function' ? (response as any).text() : response.text;
+  const text = extractResponseText(response);
   return text.replace(/```html|```/g, '').trim();
 };
 
@@ -160,8 +165,7 @@ export const checkForRegulatoryUpdates = async (fromCountry: string, toCountry: 
     contents: prompt,
   });
 
-  // @ts-ignore
-  const alertText = (typeof (response as any).text === 'function' ? (response as any).text() : response.text).trim();
+  const alertText = extractResponseText(response).trim();
 
   if (alertText === 'NO_UPDATES' || alertText === '') {
     return null;

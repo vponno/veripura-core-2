@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface ConflictResolutionInput {
     results: SkillResult[];
@@ -22,6 +23,7 @@ export class ConflictResolutionSkill implements Skill {
     id = 'conflict_resolution';
     name = 'Conflict Resolution Arbiter';
     description = 'Arbitrates when multiple skills provide opposing recommendations (e.g., lowest cost vs. lowest carbon) using configurable prioritization logic.';
+    public category = SkillCategory.CRISIS;
 
     private conflictRules: Record<string, { winner: string; loser: string; reason: string }> = {
         'lowest_cost_vs_lowest_carbon': {

@@ -19,7 +19,7 @@ export interface OrchestratorResult extends AgentEventResult {
 }
 
 export class GuardianOrchestrator {
-    
+
     public static async handlePOUpload(
         context: POUploadContext
     ): Promise<OrchestratorResult> {
@@ -66,7 +66,8 @@ export class GuardianOrchestrator {
                 consignmentId,
                 documentType,
                 analysisResult,
-                shipmentContext
+                shipmentContext,
+                file
             );
             console.log('[Orchestrator] ✓ Guardian Agent processing complete');
         } catch (error) {
@@ -238,7 +239,7 @@ export class GuardianOrchestrator {
         // Add required documents from Guardian Agent sub-agents
         if (agentResult.requiredDocuments && agentResult.requiredDocuments.length > 0) {
             console.log(`[Orchestrator] 📄 Adding ${agentResult.requiredDocuments.length} required documents:`);
-            
+
             agentResult.requiredDocuments.forEach(doc => {
                 console.log(`[Orchestrator]   + ${doc.name}: ${doc.description || doc.reason}`);
                 if (!updates[doc.name]) {
@@ -298,7 +299,7 @@ export class GuardianOrchestrator {
         }
 
         await consignmentService.updateConsignment(consignmentId, updatePayload);
-        
+
         console.log('╔════════════════════════════════════════════════════════════╗');
         console.log('║ [Orchestrator] ✅ DATABASE UPDATES COMPLETE              ║');
         console.log('╚════════════════════════════════════════════════════════════╝');

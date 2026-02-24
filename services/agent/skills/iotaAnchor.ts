@@ -1,11 +1,13 @@
 import { Skill, SkillResult } from './skillRegistry';
-import { iotaService } from '../../iotaService';
+import { SkillCategory } from '../types';
 import { logger } from '../../lib/logger';
+
 
 export class IotaAnchorSkill implements Skill {
     id = 'iota_anchor';
     name = 'IOTA Anchor';
     description = 'Anchors document hashes to the IOTA Tangle for immutability.';
+    public category = SkillCategory.INTEGRITY;
 
     async execute(input: {
         documentHash: string,
@@ -27,6 +29,7 @@ export class IotaAnchorSkill implements Skill {
         }
 
         try {
+            const { iotaService } = await import('../../iotaService');
             const anchorResult = await iotaService.anchorDocumentHash(
                 input.metadata.privateKey,
                 input.documentHash,
@@ -35,6 +38,7 @@ export class IotaAnchorSkill implements Skill {
                     docType: input.metadata.docType
                 }
             );
+
 
             return {
                 success: true,

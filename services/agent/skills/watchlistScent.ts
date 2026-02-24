@@ -1,9 +1,11 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export class WatchlistScentSkill implements Skill {
     id = 'watchlist_scent';
     name = 'Watchlist Scent';
     description = 'Detects entities present on global sanctions and watchlists.';
+    public category = SkillCategory.CYBER;
 
     async execute(input: { text: string }): Promise<SkillResult> {
         const text = input.text;

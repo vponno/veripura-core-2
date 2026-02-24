@@ -1,5 +1,7 @@
 import * as functions from "firebase-functions";
 import { BigQuery } from "@google-cloud/bigquery";
+import { LlamaCloud } from "@llamaindex/llama-cloud";
+import { toFile } from "@llamaindex/llama-cloud/core/uploads.js";
 
 const bigquery = new BigQuery();
 
@@ -92,5 +94,54 @@ export const getComplianceRules = functions.https.onCall(async (data: Compliance
     } catch (error) {
         console.error("Phase 3 Oracle Error:", error);
         throw new functions.https.HttpsError("internal", "Compliance Engine Failed");
+    }
+});
+
+interface ParseRequest {
+    base64: string;
+    fileName: string;
+}
+
+export const parseDocument = functions.https.onCall(async (data: ParseRequest, context) => {
+    const { base64, fileName } = data;
+
+    if (!base64) {
+        throw new functions.https.HttpsError("invalid-argument", "Missing base64 data");
+    }
+
+    const apiKey = process.env.VITE_LLAMA_CLOUD_API_KEY || functions.config().llamacloud?.api_key;
+
+    if (!apiKey) {
+        console.error("[parseDocument] Missing LlamaCloud API Key");
+        throw new functions.https.HttpsError("failed-precondition", "Missing LlamaCloud API Key in backend");
+    }
+
+    try {
+        const client = new LlamaCloud({ apiKey });
+
+        // Convert base64 to Buffer then to File format for SDK
+        const buffer = Buffer.from(base64, 'base64');
+        const uploadFile = await toFile(buffer, fileName || 'document.pdf');
+
+        console.log(`[parseDocument] Parsing file: ${fileName}`);
+        const jobResult = await client.parsing.parse({
+            upload_file: uploadFile,
+            tier: 'cost_effective',
+            version: 'latest',
+            expand: ['markdown']
+        });
+
+        const parsedText = (jobResult as any)?.markdown_full
+            || (jobResult as any)?.markdown?.pages?.map((p: any) => p.markdown || "").join("\n")
+            || "";
+
+        return {
+            status: "success",
+            markdown: parsedText
+        };
+
+    } catch (error: any) {
+        console.error("LlamaParse Backend Error:", error);
+        throw new functions.https.HttpsError("internal", error.message || "Failed to parse document");
     }
 });

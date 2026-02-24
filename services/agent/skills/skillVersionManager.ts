@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface SkillVersion {
     version: string;
@@ -19,6 +20,7 @@ export class SkillVersionManager implements Skill {
     id = 'skill_version_manager';
     name = 'Skill Version Manager';
     description = 'Routes requests to specific skill versions (v1 vs v2) to allow safe A/B testing and rollouts.';
+    public category = SkillCategory.META;
 
     private versionRegistry: Map<string, SkillVersion[]> = new Map();
 

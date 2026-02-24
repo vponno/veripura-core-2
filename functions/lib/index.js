@@ -1,8 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getComplianceRules = void 0;
+exports.parseDocument = exports.getComplianceRules = void 0;
 const functions = require("firebase-functions");
 const bigquery_1 = require("@google-cloud/bigquery");
+const llama_cloud_1 = require("@llamaindex/llama-cloud");
+const uploads_js_1 = require("@llamaindex/llama-cloud/core/uploads.js");
 const bigquery = new bigquery_1.BigQuery();
 exports.getComplianceRules = functions.https.onCall(async (data, context) => {
     // 1. Inputs
@@ -75,6 +77,42 @@ exports.getComplianceRules = functions.https.onCall(async (data, context) => {
     catch (error) {
         console.error("Phase 3 Oracle Error:", error);
         throw new functions.https.HttpsError("internal", "Compliance Engine Failed");
+    }
+});
+exports.parseDocument = functions.https.onCall(async (data, context) => {
+    var _a, _b, _c;
+    const { base64, fileName } = data;
+    if (!base64) {
+        throw new functions.https.HttpsError("invalid-argument", "Missing base64 data");
+    }
+    const apiKey = process.env.VITE_LLAMA_CLOUD_API_KEY || ((_a = functions.config().llamacloud) === null || _a === void 0 ? void 0 : _a.api_key);
+    if (!apiKey) {
+        console.error("[parseDocument] Missing LlamaCloud API Key");
+        throw new functions.https.HttpsError("failed-precondition", "Missing LlamaCloud API Key in backend");
+    }
+    try {
+        const client = new llama_cloud_1.LlamaCloud({ apiKey });
+        // Convert base64 to Buffer then to File format for SDK
+        const buffer = Buffer.from(base64, 'base64');
+        const uploadFile = await (0, uploads_js_1.toFile)(buffer, fileName || 'document.pdf');
+        console.log(`[parseDocument] Parsing file: ${fileName}`);
+        const jobResult = await client.parsing.parse({
+            upload_file: uploadFile,
+            tier: 'cost_effective',
+            version: 'latest',
+            expand: ['markdown']
+        });
+        const parsedText = (jobResult === null || jobResult === void 0 ? void 0 : jobResult.markdown_full)
+            || ((_c = (_b = jobResult === null || jobResult === void 0 ? void 0 : jobResult.markdown) === null || _b === void 0 ? void 0 : _b.pages) === null || _c === void 0 ? void 0 : _c.map((p) => p.markdown || "").join("\n"))
+            || "";
+        return {
+            status: "success",
+            markdown: parsedText
+        };
+    }
+    catch (error) {
+        console.error("LlamaParse Backend Error:", error);
+        throw new functions.https.HttpsError("internal", error.message || "Failed to parse document");
     }
 });
 //# sourceMappingURL=index.js.map

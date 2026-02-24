@@ -128,7 +128,8 @@ export async function processPOUpload(
         product?: string;
         hsCode?: string;
         attributes?: string[];
-    }
+    },
+    file?: File
 ): Promise<AgentEventResult> {
     const event: AgentEvent = {
         id: `evt-${Date.now()}`,
@@ -136,7 +137,8 @@ export async function processPOUpload(
         payload: {
             documentId: documentType,
             analysis: analysisResult,
-            shipment: shipmentContext
+            shipment: shipmentContext,
+            file
         },
         timestamp: new Date().toISOString()
     };

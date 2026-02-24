@@ -262,19 +262,19 @@ Analyze the provided document and perform these comprehensive tasks:
 
 ## 1. SECURITY & FORENSICS CHECK
 Analyze visual document for signs of tampering, edits, or AI generation:
-- Look for mismatched fonts, inconsistent noise patterns (cut-and-paste edits).
+- **CRITICAL:** Detect ANY handwritten changes, manual corrections, or manual signatures on typed values (quantities, dates, prices).
+- **Pixel Analysis:** Look for mismatched fonts, inconsistent noise patterns, or "cut-and-paste" artifacts indicating pixel manipulation (common in certificate fraud).
 - Check for logical inconsistencies (dates that don't match, prices that don't sum up).
-- **CRITICAL:** Check DATE FIELDS for pixel manipulation (common in certificate fraud).
 - Provide a 'tamperScore' (0-100).
-- **Handwritten Modifications:** Detect ANY handwritten changes (quantities, dates, prices).
+- If handwriting is found, set 'handwrittenModifications' to true and describe exactly what was manual.
 
-## 2. CERTIFICATION VALIDATION (PHASE 1)
-If this is a CERTIFICATE (Organic, ISO, Health, Phytosanitary), apply STRICT logic:
+## 2. CERTIFICATION & PRODUCT MATCHING
+If this is a CERTIFICATE (Organic, ISO, Health, Phytosanitary), apply STRICT reconciliation:
+- **Product Mismatch Detection:** Does the product on the certificate (scope/name) match the actual shipment products? If the certificate is for "Coffee" but the shipment is "Cocoa", flag as "Product Mismatch".
 - **Date Validity:** Extract 'validFrom' and 'validUntil'. COMPARE against Current Date (${today}).
   - If validUntil < ${today}, sets isCertificate=true and ADD "Expired Certificate" to validationErrors.
 - **Holder Check:** Extract 'holderName'. Does it match the Exporter context? If not, ADD "Holder Name Mismatch".
 - **Scope Check:** Extract 'certifiedScope'. Do the products in this shipment match the scope? If not, ADD "Product not in Scope".
-- **Certificate Number:** Extract and verify format plausibility.
 
 ## 3. EXTRACT KEY INFORMATION & HS CODES
 - Document Type, ID, Issue Date.
@@ -295,14 +295,15 @@ Based on the **Extracted HS Code** and **Destination**:
 
 ## 6. VALIDATION CHECKS SUMMARY
 Generate a list of specific checks (passed/failed):
+- "Handwritten Modification Check"
+- "Product Integrity Match"
 - "Certificate Expiry Check"
 - "Holder Name Match"
 - "Scope Verification"
-- "Handwritten Analysis"
 - "Route Consistency"
 
 Assign overall validationLevel:
-- **RED:** Expired, Tampered, Critical Route Mismatch.
+- **RED:** Expired, Tampered, Product Mismatch, Critical Route Mismatch.
 - **YELLOW:** Suspicious, Minor Handwritten Mods, Missing optional info.
 - **GREEN:** Authentic, Valid Dates, Matches Context.`;
 

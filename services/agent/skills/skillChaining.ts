@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface ChainStep {
     skillId: string;
@@ -27,6 +28,7 @@ export class SkillChainingSkill implements Skill {
     id = 'skill_chaining';
     name = 'Workflow Orchestrator';
     description = 'Orchestrates complex multi-skill workflows with conditional branching (e.g., "If ESG fails, trigger Legal Review").';
+    public category = SkillCategory.META;
 
     async execute(input: SkillChainingInput): Promise<SkillResult> {
         const { workflowName, startStep, steps, initialInput } = input;

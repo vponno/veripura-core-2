@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface CountryRiskInput {
     country: string;
@@ -25,6 +26,7 @@ export class CountryRiskSkill implements Skill {
     id = 'country_risk';
     name = 'Country Risk Monitor';
     description = 'Monitors political instability, expropriation risk, and sovereign default indicators using geopolitical feeds.';
+    public category = SkillCategory.TRADE;
 
     private riskDatabase: Map<string, CountryRiskProfile> = new Map([
         ['US', { countryCode: 'US', overallRisk: 'low', score: 92, dimensions: { political: { score: 90, risk: 'Stable' }, economic: { score: 95, risk: 'Strong' }, operational: { score: 90, risk: 'Low' }, security: { score: 93, risk: 'Low' } }, alerts: [], lastUpdated: '2024-03-01' }],

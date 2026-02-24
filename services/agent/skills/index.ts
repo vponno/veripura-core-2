@@ -1,5 +1,5 @@
-export * from './skillRegistry';
 export * from './skillHelper';
+
 export * from './skillLearning';
 export * from './skillChaining';
 export * from './skillTelemetry';
@@ -20,13 +20,7 @@ export * from './watchlistScent';
 export * from './religiousCompliance';
 export * from './ingredientAnalysis';
 export * from './conflictResolution';
-
-// Old skills - rename to avoid conflicts with new architecture skills
-export { LabelingComplianceSkill as LabelingComplianceSkillLegacy } from './labelingCompliance';
-export { EthicalAuditSkill as EthicalAuditSkillLegacy } from './ethicalAudit';
-export { RiskDatabaseSkill as RiskDatabaseSkillLegacy } from './riskDatabase';
-export { TariffOptimizerSkill as TariffOptimizerSkillLegacy } from './tariffOptimizer';
-export { CarbonCalculatorSkill as CarbonCalculatorSkillLegacy } from './scientific/CarbonCalculatorSkill';
+export * from './calculatorSkill';
 
 // New Architecture Skills (in subdirectories)
 export * from './regulatory/RegulatoryCheckSkill.ts';
@@ -42,6 +36,7 @@ export * from './standards/OrganicComplianceSkill.ts';
 // Environmental / Scientific
 export * from './environmental/CarbonCalculatorSkill.ts';
 export * from './scientific/RiskDatabaseSkill.ts';
+// Note: scientific/CarbonCalculatorSkill.ts exists but has same ID as environmental version - not exported
 
 // IoT
 export * from './iot/ContainerSealIntegritySkill.ts';

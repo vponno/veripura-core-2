@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface LabResultValidationInput {
     certificateOfAnalysis: {
@@ -37,6 +38,7 @@ export class LabResultValidationSkill implements Skill {
     id = 'lab_result_validation';
     name = 'Lab Result Validator';
     description = 'Verifies Certificate of Analysis (COA) values against product specifications and tolerance thresholds.';
+    public category = SkillCategory.QUALITY;
 
     async execute(input: LabResultValidationInput): Promise<SkillResult> {
         const { certificateOfAnalysis, productSpec } = input;

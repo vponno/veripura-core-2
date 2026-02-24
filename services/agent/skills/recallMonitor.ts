@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface RecallMonitorInput {
     product: {
@@ -34,6 +35,7 @@ export class RecallMonitorSkill implements Skill {
     id = 'recall_monitor';
     name = 'Recall Monitor';
     description = 'Cross-checks active shipments against RASFF (EU) and FDA recall alerts to prevent distribution of recalled products.';
+    public category = SkillCategory.QUALITY;
 
     private activeRecalls: RecallAlert[] = [
         {

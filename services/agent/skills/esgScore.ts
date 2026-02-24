@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface ESGScoreInput {
     supplierId: string;
@@ -26,6 +27,7 @@ export class ESGScoreSkill implements Skill {
     id = 'esg_score';
     name = 'ESG Score Keeper';
     description = 'Aggregates Scope 1, 2, & 3 emissions and sustainability metrics into CSRD/SFDR reporting standards.';
+    public category = SkillCategory.ENVIRONMENTAL;
 
     private csrdRequirements = {
         environmental: ['GHG_Protocol', 'CDP', 'GRI'],

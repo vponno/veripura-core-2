@@ -10,14 +10,22 @@ export type Skill = ISkill;
 
 
 export class SkillRegistry {
+    private static instance: SkillRegistry;
     private skills: Map<string, Skill> = new Map();
     private loadErrors: string[] = [];
+
+    static getInstance(): SkillRegistry {
+        if (!SkillRegistry.instance) {
+            SkillRegistry.instance = new SkillRegistry();
+        }
+        return SkillRegistry.instance;
+    }
 
     constructor() {
         // Auto-discover and register all skills dynamically (Guardian Agent pattern)
         console.log('[SkillRegistry] Starting auto-discovery...');
         console.log('[SkillRegistry] Available exports from index:', Object.keys(AllSkills).filter(k => typeof AllSkills[k] === 'function').join(', '));
-        
+
         Object.entries(AllSkills).forEach(([name, SkillClass]: [string, any]) => {
             if (typeof SkillClass === 'function' && name !== 'SkillRegistry') {
                 try {
@@ -35,7 +43,23 @@ export class SkillRegistry {
                 }
             }
         });
-        
+
+        // ---------------------------------------------------------
+        // ALIASES for backward compatibility or naming mismatches
+        // ---------------------------------------------------------
+        const aliases: Record<string, string> = {
+            'document_analysis': 'document_analysis_skill',
+            'labeling_compliance': 'labeling_compliance_skill',
+        };
+
+        Object.entries(aliases).forEach(([alias, actualId]) => {
+            const skill = this.skills.get(actualId);
+            if (skill) {
+                this.skills.set(alias, skill);
+                console.log(`[SkillRegistry] ⚡ Alias added: ${alias} -> ${actualId}`);
+            }
+        });
+
         console.log(`[SkillRegistry] =========================================`);
         console.log(`[SkillRegistry] ✓ Auto-loaded ${this.skills.size} skills successfully`);
         if (this.loadErrors.length > 0) {
@@ -43,7 +67,7 @@ export class SkillRegistry {
             this.loadErrors.forEach(e => console.log(`[SkillRegistry]   - ${e}`));
         }
         console.log(`[SkillRegistry] =========================================`);
-        
+
         // Group by category for summary
         const byCategory: Record<string, string[]> = {};
         this.skills.forEach((skill, id) => {
@@ -74,8 +98,50 @@ export class SkillRegistry {
     list(): Skill[] {
         return Array.from(this.skills.values());
     }
-    
+
     getByCategory(category: string): Skill[] {
         return Array.from(this.skills.values()).filter(s => s.category === category);
+    }
+
+    /**
+     * Get all registered skills (alias for list()).
+     */
+    getAllSkills(): Skill[] {
+        return this.list();
+    }
+
+    /**
+     * Execute a skill by ID with the given context.
+     */
+    async executeSkill(id: string, context: SkillContext): Promise<SkillResult> {
+        const skill = this.get(id);
+
+        if (!skill) {
+            return {
+                success: false,
+                confidence: 0,
+                errors: [`Skill not found: ${id}`],
+                auditLog: [{
+                    timestamp: new Date().toISOString(),
+                    action: 'EXECUTE_FAILED',
+                    details: `Skill not found: ${id}`
+                }]
+            };
+        }
+
+        try {
+            return await skill.execute(context);
+        } catch (error: any) {
+            return {
+                success: false,
+                confidence: 0,
+                errors: [error.message || 'Unknown error'],
+                auditLog: [{
+                    timestamp: new Date().toISOString(),
+                    action: 'EXECUTE_ERROR',
+                    details: error.message || 'Unknown error'
+                }]
+            };
+        }
     }
 }

@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface TelemetryEvent {
     timestamp: string;
@@ -27,6 +28,7 @@ export class SkillTelemetrySkill implements Skill {
     id = 'skill_telemetry';
     name = 'Skill Telemetry Collector';
     description = 'Logs inputs, outputs, latency, and token costs for every skill execution to enable observability and performance analysis.';
+    public category = SkillCategory.META;
 
     private telemetryStore: TelemetryEvent[] = [];
 

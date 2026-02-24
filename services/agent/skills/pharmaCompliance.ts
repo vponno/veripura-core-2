@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface PharmaComplianceInput {
     productName: string;
@@ -31,6 +32,7 @@ export class PharmaComplianceSkill implements Skill {
     id = 'pharma_compliance';
     name = 'Pharma Compliance Guard';
     description = 'Verifies Good Distribution Practice (GDP) and Good Manufacturing Practice (GMP) for pharmaceuticals and medical devices.';
+    public category = SkillCategory.HIGHRISK;
 
     private regulations: Record<string, Regulation[]> = {
         EU: [

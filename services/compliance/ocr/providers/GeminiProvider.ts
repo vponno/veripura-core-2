@@ -94,12 +94,12 @@ export class GeminiProvider implements DocumentAnalysisProvider {
     name = 'Gemini';
     private ai: GoogleGenAI;
 
-    constructor() {
-        const apiKey = getApiKey();
-        if (!apiKey) {
+    constructor(apiKey?: string) {
+        const key = apiKey || getApiKey();
+        if (!key) {
             console.error("API Key not found. Please set VITE_GEMINI_API_KEY.");
         }
-        this.ai = new GoogleGenAI({ apiKey: apiKey || 'MISSING_KEY' });
+        this.ai = new GoogleGenAI({ apiKey: key || 'MISSING_KEY' });
     }
 
     async analyze(fileBase64: string, mimeType: string, options: AnalysisOptions): Promise<AnalysisResult> {

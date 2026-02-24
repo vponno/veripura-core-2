@@ -3,7 +3,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Consignments from './pages/Consignments';
-import SupplyChain from './pages/SupplyChain';
+
 import TermsOfService from './pages/TermsOfService';
 import AIInsights from './pages/AIInsights';
 import AuthDebug from './pages/AuthDebug';
@@ -27,7 +27,7 @@ const App: React.FC = () => {
   const [userRole, setUserRole] = useState<UserRole>(UserRole.EXPORTER);
 
   return (
-    <HashRouter>
+    <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <PageTracker />
 
       <ThemeProvider>
@@ -47,7 +47,7 @@ const App: React.FC = () => {
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/create-contract" element={<CreateContract />} />
                       <Route path="/consignments" element={<Consignments />} />
-                      <Route path="/supply-chain" element={<SupplyChain />} />
+
                       <Route path="/terms" element={<TermsOfService />} />
                       <Route path="/insights" element={<AIInsights />} />
                       <Route path="/wallet" element={<AuthDebug />} />

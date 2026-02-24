@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface InsuranceValidationInput {
     policyNumber?: string;
@@ -23,6 +24,7 @@ export class InsuranceValidationSkill implements Skill {
     id = 'insurance_validation';
     name = 'Insurance Validator';
     description = 'Validates cargo insurance adequacy against policy limits and checks for specific commodity exclusions.';
+    public category = SkillCategory.FINANCIAL;
 
     private mockPolicies: PolicyCoverage[] = [
         { policyNumber: 'POL-001', maxCoverage: 500000, coveredRisks: ['fire', 'theft', 'collision', 'natural_disaster'], excludedRisks: ['war', 'nuclear', 'delay'], deductible: 5000, status: 'active' },

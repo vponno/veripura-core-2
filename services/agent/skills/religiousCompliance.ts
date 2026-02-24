@@ -1,9 +1,11 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export class ReligiousComplianceSkill implements Skill {
     id = 'religious_compliance';
     name = 'Religious Compliance';
     description = 'Verifies Halal and Kosher certifications against recognized authorities.';
+    public category = SkillCategory.REGULATORY;
 
     async execute(payload: any): Promise<SkillResult> {
         const { type, authority } = payload;

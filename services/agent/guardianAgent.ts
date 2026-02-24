@@ -10,7 +10,7 @@ import { DependencyGraph } from './dependencyGraph';
 import { SubAgent } from './subAgent';
 import { logger } from '../lib/logger';
 import { SubAgentFactory } from './subAgentFactory';
-import { SkillRegistry } from './skills';
+import { SkillRegistry } from './skills/skillRegistry';
 import { ActiveDefenseConfig, DEFAULT_RISK_CONFIG } from './activeDefense/riskModel';
 import { v4 as uuidv4 } from 'uuid';
 import { Skill } from './skills/skillRegistry';
@@ -606,7 +606,7 @@ export class GuardianAgent {
         logger.log(`[GuardianAgent] Running Conflict Resolution on ${result.alerts.length} alerts.`);
 
         // Use Conflict Scanner skill if available
-        const scanner = this.skillRegistry.get('conflict_scanner');
+        const scanner = this.skillRegistry.get('conflict_scanner_skill');
         if (scanner) {
             // Future: Implement specific logic to merge/override contradictory alerts
             // For now, we just log and tag them
@@ -659,5 +659,21 @@ export class GuardianAgent {
         }
 
         return skills.length > 0 ? skills : ['Domain Analysis'];
+    }
+
+    /**
+     * Clean up resources when the agent is no longer needed.
+     * Prevents memory leaks by clearing maps and event listeners.
+     */
+    public destroy() {
+        logger.log('[GuardianAgent] Destroying agent and cleaning up resources...');
+        
+        // Clear sub-agents
+        this.subAgents.clear();
+        
+        // Serialize state to persist
+        this.state.memory.knowledgeGraph = this.graph.serialize();
+        
+        logger.log('[GuardianAgent] ✓ Agent destroyed');
     }
 }

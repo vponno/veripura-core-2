@@ -48,6 +48,15 @@ export const UnifiedDocumentList: React.FC<UnifiedDocumentListProps> = ({
     onApprove,
     onReject
 }) => {
+    const [expandedChecks, setExpandedChecks] = React.useState<Record<string, boolean>>({});
+
+    const toggleChecks = (docName: string) => {
+        setExpandedChecks(prev => ({
+            ...prev,
+            [docName]: !prev[docName]
+        }));
+    };
+
     if (!documents || documents.length === 0) {
         return (
             <div className="text-center py-8 text-slate-400">
@@ -58,11 +67,35 @@ export const UnifiedDocumentList: React.FC<UnifiedDocumentListProps> = ({
         );
     }
 
-    // Group documents by status priority: Pending > Pending Review > Validated > Rejected
-    const pending = documents.filter(d => !d.status || d.status === 'Pending');
-    const reviewing = documents.filter(d => d.status === 'Pending Review');
-    const validated = documents.filter(d => d.status === 'Validated');
-    const rejected = documents.filter(d => d.status === 'Rejected');
+    // Category Mapping & Sorting
+    const categoriesOrder = ['Commercial', 'Certificates', 'Regulatory', 'Other'];
+
+    const categorizeDoc = (doc: DocumentItem) => {
+        if (doc.category && categoriesOrder.includes(doc.category)) return doc.category;
+        const name = doc.name.toLowerCase();
+        if (name.includes('invoice') || name.includes('packing list') || name.includes('purchase order') || name.includes('contract')) return 'Commercial';
+        if (name.includes('certificate') || name.includes('organic') || name.includes('phytosanitary') || name.includes('health') || name.includes('origin') || name.includes('analysis')) return 'Certificates';
+        if (name.includes('bill of lading') || name.includes('air waybill') || name.includes('declaration') || name.includes('permit') || name.includes('license') || name.includes('waybill') || name.includes('eur.1')) return 'Regulatory';
+        return 'Other';
+    };
+
+    const categorizedDocs = documents.reduce((acc: Record<string, DocumentItem[]>, doc) => {
+        const cat = categorizeDoc(doc);
+
+        // Ensure issuingAgency is populated if missing
+        const document = { ...doc };
+        if (!document.issuingAgency) {
+            // Import complianceService dynamically or use its logic
+            // Since we can't easily import it here without potential circular deps 
+            // if we are not careful, we'll rely on the parent providing it or 
+            // use a simplified version of the mapping logic.
+            // But RegisterConsignment is already providing it now.
+        }
+
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(document);
+        return acc;
+    }, {});
 
     const renderDocumentCard = (doc: DocumentItem) => {
         const isGuardian = doc.addedBy === 'guardian_agent';
@@ -122,11 +155,6 @@ export const UnifiedDocumentList: React.FC<UnifiedDocumentListProps> = ({
                                             Required
                                         </span>
                                     )}
-                                    {isGuardian && (
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-fuchsia-100 text-fuchsia-600 border border-fuchsia-200 flex items-center gap-1">
-                                            <Bot size={10} /> GUARDIAN IDENTIFIED
-                                        </span>
-                                    )}
                                     {doc.status === 'Validated' && (
                                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-200">
                                             ✓ Validated
@@ -139,71 +167,55 @@ export const UnifiedDocumentList: React.FC<UnifiedDocumentListProps> = ({
                                     <p className="text-xs text-slate-600 mb-2">{doc.description}</p>
                                 )}
 
-                                {/* Meta info */}
-                                <div className="flex items-center gap-3 text-xs">
-                                    {doc.issuingAgency && (
-                                        <span className="text-slate-500 flex items-center gap-1">
-                                            {/* Use Bot icon if it looks like an agent, otherwise bank/institution icon */}
-                                            {doc.issuingAgency.includes('Agent') ||
-                                                doc.issuingAgency.includes('Guardian') ||
-                                                doc.issuingAgency.includes('Specialist') ||
-                                                doc.issuingAgency.includes('Auditor') ||
-                                                doc.issuingAgency.includes('Validator') ||
-                                                doc.issuingAgency.includes('Expert') ||
-                                                doc.issuingAgency.includes('Sentry') ||
-                                                doc.issuingAgency.includes('Optimizer') ||
-                                                doc.issuingAgency.includes('Advisor') ||
-                                                doc.issuingAgency.includes('Inspector') ||
-                                                doc.issuingAgency.includes('Watcher') ||
-                                                doc.issuingAgency.includes('Diplomat') ||
-                                                doc.issuingAgency.includes('Interpreter') ||
-                                                doc.issuingAgency.includes('Scout') ||
-                                                doc.issuingAgency.includes('Guard') ||
-                                                doc.issuingAgency.includes('Checkpoint') ? (
-                                                <Bot size={12} className="text-fuchsia-600" />
-                                            ) : (
-                                                <span>🏛️</span>
-                                            )}
-                                            {doc.issuingAgency.includes('Agent') ||
-                                                doc.issuingAgency.includes('Guardian') ||
-                                                doc.issuingAgency.includes('Specialist') ||
-                                                doc.issuingAgency.includes('Auditor') ||
-                                                doc.issuingAgency.includes('Validator') ||
-                                                doc.issuingAgency.includes('Expert') ||
-                                                doc.issuingAgency.includes('Sentry') ||
-                                                doc.issuingAgency.includes('Optimizer') ||
-                                                doc.issuingAgency.includes('Advisor') ||
-                                                doc.issuingAgency.includes('Inspector') ||
-                                                doc.issuingAgency.includes('Watcher') ||
-                                                doc.issuingAgency.includes('Diplomat') ||
-                                                doc.issuingAgency.includes('Interpreter') ||
-                                                doc.issuingAgency.includes('Scout') ||
-                                                doc.issuingAgency.includes('Guard') ||
-                                                doc.issuingAgency.includes('Checkpoint') ? (
-                                                <span className="text-fuchsia-700 font-medium">Verified by {doc.issuingAgency}</span>
-                                            ) : (
-                                                <span>{doc.issuingAgency}</span>
-                                            )}
-                                        </span>
+                                {/* Meta info: Verified by & Category */}
+                                <div className="flex items-center gap-2 mb-2">
+                                    {(doc.issuingAgency || (doc.analysis?.agentAuditTrail && doc.analysis.agentAuditTrail.length > 0)) && (
+                                        <div className="flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-600 border border-fuchsia-100 uppercase tracking-tight">
+                                            <Bot size={11} strokeWidth={3} />
+                                            <span>Verified by {doc.issuingAgency || doc.analysis?.agentAuditTrail?.[0]?.agentName || 'Guardian Specialist'}</span>
+                                        </div>
                                     )}
                                     {doc.category && (
-                                        <span className={`px-2 py-0.5 rounded-full ${doc.category === 'Food Safety' ? 'bg-blue-50 text-blue-600' :
-                                            doc.category === 'Customs' ? 'bg-purple-50 text-purple-600' :
-                                                doc.category === 'Organic' ? 'bg-green-50 text-green-600' :
-                                                    'bg-slate-100 text-slate-600'
-                                            }`}>
+                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 uppercase tracking-tight">
                                             {doc.category}
                                         </span>
                                     )}
                                 </div>
 
                                 {/* Status message */}
-                                <p className="text-xs text-slate-500 mt-2">
-                                    {doc.status === 'Validated' ? '✓ Encrypted, stored & anchored to blockchain' :
-                                        doc.status === 'Pending Review' ? '⚠ Awaiting human review' :
-                                            doc.status === 'Rejected' ? '✗ Validation failed - re-upload required' :
-                                                '📤 Waiting for upload'}
-                                </p>
+                                <div className="flex items-center gap-2 mt-2 text-[11px]">
+                                    {doc.status === 'Validated' ? (
+                                        <div className="flex items-center gap-1.5 text-emerald-600 font-medium">
+                                            <CheckCircle size={12} />
+                                            <span>Encrypted, stored & anchored to blockchain</span>
+                                        </div>
+                                    ) : doc.status === 'Pending Review' ? (
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-1.5 text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded border border-amber-200 w-fit">
+                                                <Info size={12} />
+                                                <span>Awaiting human review</span>
+                                            </div>
+                                            {doc.analysis?.reviewReason && (
+                                                <p className="text-[11px] text-amber-700 font-medium bg-amber-50/50 p-2 rounded-lg border border-amber-100 italic leading-tight">
+                                                    <span className="font-bold uppercase text-[9px] block mb-0.5 text-amber-500 not-italic">Review Required Because:</span>
+                                                    {doc.analysis.reviewReason}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ) : doc.status === 'Rejected' ? (
+                                        <div className="flex items-center gap-1.5 text-red-600 font-medium">
+                                            <XCircle size={12} />
+                                            <span>Validation failed - re-upload required</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                            <div className="w-4 h-4 rounded bg-blue-50 text-blue-500 flex items-center justify-center border border-blue-100">
+                                                <Upload size={10} />
+                                            </div>
+                                            <span>Waiting for upload</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Actions */}
@@ -320,11 +332,72 @@ export const UnifiedDocumentList: React.FC<UnifiedDocumentListProps> = ({
                         </div>
 
                         {/* Analysis preview for validated docs */}
-                        {doc.status === 'Validated' && doc.analysis && (
+                        {(doc.status === 'Validated' || doc.status === 'Pending Review') && doc.analysis && (
                             <div className="mt-3 pt-3 border-t border-slate-100">
-                                <p className="text-xs text-slate-500 line-clamp-2">
-                                    <strong>AI Analysis:</strong> {doc.analysis.aiSummary || 'Document processed successfully'}
+                                <p className="text-xs text-slate-500 line-clamp-2 mb-2">
+                                    <strong className="text-slate-700">AI Analysis:</strong> {doc.status === 'Pending Review' ? (doc.analysis.aiSummary || 'Document processed - flagged for human verification') : (doc.analysis.aiSummary || 'Document processed successfully')}
                                 </p>
+
+                                {/* Intelligent Specialist Findings */}
+                                {(() => {
+                                    const relevantFindings = doc.analysis.agentAuditTrail?.filter((log: any) => {
+                                        const content = log.details || log.summary || "";
+                                        return content.length > 0 &&
+                                            !content.includes("Analysis Pending") &&
+                                            !content.includes("No specific") &&
+                                            !content.includes("required for duty calculation"); // Filter out empty tariff reports
+                                    }) || [];
+
+                                    if (relevantFindings.length === 0) return null;
+
+                                    const alerts = relevantFindings.filter((f: any) => f.action === 'ISSUE_FOUND');
+                                    const verified = relevantFindings.filter((f: any) => f.action !== 'ISSUE_FOUND');
+                                    const isExpanded = expandedChecks[doc.name];
+
+                                    return (
+                                        <div className="space-y-1.5 mt-2">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                    <Bot size={12} /> Specialist Findings
+                                                </div>
+                                                {verified.length > 0 && (
+                                                    <button
+                                                        onClick={() => toggleChecks(doc.name)}
+                                                        className="text-[10px] font-bold text-fuchsia-600 hover:text-fuchsia-700 flex items-center gap-1"
+                                                    >
+                                                        {isExpanded ? 'Hide' : 'Show'} {verified.length} Verified {verified.length === 1 ? 'Check' : 'Checks'}
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Alerts (Always Visible) */}
+                                            {alerts.map((log: any, idx: number) => (
+                                                <div key={`alert-${idx}`} className="flex gap-2 text-[11px] bg-amber-50 text-amber-900 p-2 rounded-lg border border-amber-200">
+                                                    <div className="shrink-0 mt-0.5">
+                                                        <ShieldAlert size={12} className="text-amber-500" />
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-bold">{log.agentName || 'Specialist'}: </span>
+                                                        {log.details || log.summary}
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            {/* Verified (Toggleable) */}
+                                            {isExpanded && verified.map((log: any, idx: number) => (
+                                                <div key={`verified-${idx}`} className="flex gap-2 text-[11px] bg-emerald-50/50 text-emerald-800 p-2 rounded-lg border border-emerald-100/50 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                    <div className="shrink-0 mt-0.5">
+                                                        <ShieldCheck size={12} className="text-emerald-500" />
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-bold opacity-70">{log.agentName || 'Specialist'}: </span>
+                                                        {log.details || log.summary}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         )}
                     </div>
@@ -334,70 +407,37 @@ export const UnifiedDocumentList: React.FC<UnifiedDocumentListProps> = ({
     };
 
     return (
-        <div className="space-y-6">
-            {/* Validated Documents (Moved to Top) */}
-            {validated.length > 0 && (
-                <div>
-                    <div className="flex items-center gap-2 mb-4">
-                        <CheckCircle className="w-5 h-5 text-emerald-600" />
-                        <h4 className="font-bold text-emerald-700">Validated ({validated.length})</h4>
-                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                            Encrypted & Anchored
-                        </span>
-                    </div>
-                    <div className="space-y-3">
-                        {validated.map(renderDocumentCard)}
-                    </div>
-                </div>
-            )}
+        <div className="space-y-10">
+            {categoriesOrder.map(category => {
+                const docs = categorizedDocs[category] || [];
+                if (docs.length === 0) return null;
 
-            {/* Pending Documents */}
-            {pending.length > 0 && (
-                <div>
-                    <div className="flex items-center gap-2 mb-4">
-                        <ShieldAlert className="w-5 h-5 text-red-600" />
-                        <h4 className="font-bold text-red-700">Action Required ({pending.length})</h4>
-                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                            Upload these documents to proceed
-                        </span>
-                    </div>
-                    <div className="space-y-3">
-                        {pending.map(renderDocumentCard)}
-                    </div>
-                </div>
-            )}
+                // Sort documents within category: Rejected > Pending Review > Pending > Validated
+                const sortedDocs = [...docs].sort((a, b) => {
+                    const statusOrder: Record<string, number> = { 'Rejected': 0, 'Pending Review': 1, 'Pending': 2, 'Validated': 3 };
+                    const aStatus = a.status || 'Pending';
+                    const bStatus = b.status || 'Pending';
+                    return (statusOrder[aStatus] ?? 2) - (statusOrder[bStatus] ?? 2);
+                });
 
-            {/* Pending Review */}
-            {reviewing.length > 0 && (
-                <div>
-                    <div className="flex items-center gap-2 mb-4">
-                        <Sparkles className="w-5 h-5 text-amber-600" />
-                        <h4 className="font-bold text-amber-700">Pending Review ({reviewing.length})</h4>
-                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                            Awaiting approval
-                        </span>
+                return (
+                    <div key={category} className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                            <div className="flex items-center gap-2">
+                                <div className={`w-1 h-6 rounded-full ${category === 'Commercial' ? 'bg-blue-500' :
+                                    category === 'Certificates' ? 'bg-emerald-500' :
+                                        category === 'Regulatory' ? 'bg-purple-500' : 'bg-slate-400'
+                                    }`} />
+                                <h4 className="font-bold text-slate-800 tracking-tight">{category} ({docs.length})</h4>
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Roadmap Section</span>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4">
+                            {sortedDocs.map(renderDocumentCard)}
+                        </div>
                     </div>
-                    <div className="space-y-3">
-                        {reviewing.map(renderDocumentCard)}
-                    </div>
-                </div>
-            )}
-
-            {/* Rejected Documents */}
-            {rejected.length > 0 && (
-                <div>
-                    <div className="flex items-center gap-2 mb-4">
-                        <XCircle className="w-5 h-5 text-red-600" />
-                        <h4 className="font-bold text-red-700">Rejected ({rejected.length})</h4>
-                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                            Re-upload required
-                        </span>
-                    </div>
-                    <div className="space-y-3">
-                        {rejected.map(renderDocumentCard)}
-                    </div>
-                </div>
-            )}
+                );
+            })}
         </div>
     );
 };

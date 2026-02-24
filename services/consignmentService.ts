@@ -256,6 +256,7 @@ export const consignmentService = {
         // 2. Encrypt File
         const { encryptedBlob, iv } = await EncryptionService.encryptFile(file, key);
         const ivStr = EncryptionService.ivToString(iv);
+        logger.log(`[ConsignmentService] Encrypted file. ContentType: ${file.type}, IV: ${ivStr}`);
 
         // 3. Upload to Storage
         const simpleName = `${docType.replace(/[^a-zA-Z0-9]/g, '')}_${Date.now()}.enc`;
@@ -519,12 +520,13 @@ export const consignmentService = {
         return updatedDocData;
     },
 
-    // 10. Bulk Archive (Admin / Dev Tool)
-    archiveAllConsignments: async () => {
-        logger.log("[ConsignmentService] Starting Bulk Archive...");
+    // 10. Bulk Archive (User Scoped)
+    archiveAllConsignments: async (userId: string) => {
+        logger.log(`[ConsignmentService] Starting Bulk Archive for user ${userId}...`);
         try {
             const q = query(
                 collection(db, 'consignments'),
+                where('ownerId', '==', userId),
                 where('status', '!=', 'Archived')
             );
             const snapshot = await getDocs(q);
@@ -534,12 +536,17 @@ export const consignmentService = {
                 return 0;
             }
 
-            const batchPromises = snapshot.docs.map(docSnap =>
-                updateDoc(doc(db, 'consignments', docSnap.id), { status: 'Archived' })
-            );
+            // Use writeBatch for atomic bulk operation (limited to 500 docs)
+            const { writeBatch } = await import('firebase/firestore');
+            const batch = writeBatch(db);
 
-            await Promise.all(batchPromises);
-            logger.log(`[ConsignmentService] Successfully archived ${snapshot.size} consignments.`);
+            snapshot.docs.forEach(docSnap => {
+                batch.update(doc(db, 'consignments', docSnap.id), { status: 'Archived' });
+            });
+
+            await batch.commit();
+
+            logger.log(`[ConsignmentService] Successfully archived ${snapshot.size} consignments for user ${userId}.`);
             return snapshot.size;
         } catch (error) {
             console.error("[ConsignmentService] Bulk Archive Failed:", error);

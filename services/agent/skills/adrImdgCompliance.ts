@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface ADRIMDGInput {
     unNumber: string;
@@ -28,6 +29,7 @@ export class ADRIMDGComplianceSkill implements Skill {
     id = 'adr_imdg_compliance';
     name = 'ADR/IMDG Specialist';
     description = 'Classifies dangerous goods (hazmat) and verifies labeling/packaging for transport per UN Dangerous Goods List.';
+    public category = SkillCategory.HIGHRISK;
 
     private hazmatDatabase: Map<string, HazardInfo> = new Map([
         ['UN1203', { class: '3', label: 'Flammable Liquid', properShippingName: 'Gasoline', packingGroup: 'II', restrictions: ['No passengers'], packagingRequirements: ['UN approved packaging', 'Label Class 3'], requiredDocs: ['MSDS', 'Dangerous Goods Declaration'] }],

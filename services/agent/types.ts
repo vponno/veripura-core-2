@@ -52,31 +52,71 @@ export interface SkillAuditLog {
 export interface SkillResult {
   success: boolean;
   data?: any;
-  confidence?: number; // 0.0 to 1.0
+  confidence?: number;
   requiresHumanReview?: boolean;
   verdict?: 'COMPLIANT' | 'NON_COMPLIANT' | 'WARNING' | 'UNKNOWN';
   auditLog?: SkillAuditLog[];
   errors?: string[];
-
-  // Backwards compatibility properties
+  // Backwards compatibility - prefer using confidence/verdict instead
   status?: string;
   message?: string;
   score?: number;
 }
 
-export interface ISkill<T = any> {
+export interface ISkill<T = SkillContext> {
   id: string;
   name: string;
-  category?: SkillCategory | string; // Allow string and optional for backwards compat
+  category?: SkillCategory | string;
   description: string;
+  execute(input: T): Promise<SkillResult>;
+  validateContext?(input: T): Promise<boolean>;
+}
 
-  /**
-   * Primary execution method for the skill.
-   */
-  execute(context: T): Promise<SkillResult>;
-
-  /**
-   * Validates if the skill can run with the provided context (e.g. check for required files).
-   */
-  validateContext?(context: T): Promise<boolean>;
+export abstract class BaseSkill<T = SkillContext> implements ISkill<T> {
+  abstract id: string;
+  abstract name: string;
+  abstract description: string;
+  abstract category?: SkillCategory | string;
+  
+  abstract execute(input: T): Promise<SkillResult>;
+  
+  async validateContext?(input: T): Promise<boolean> {
+    return true;
+  }
+  
+  protected createSuccess(data: any, options?: {
+    confidence?: number;
+    verdict?: 'COMPLIANT' | 'NON_COMPLIANT' | 'WARNING' | 'UNKNOWN';
+    message?: string;
+  }): SkillResult {
+    return {
+      success: true,
+      data,
+      confidence: options?.confidence ?? 1.0,
+      verdict: options?.verdict ?? 'COMPLIANT',
+      message: options?.message,
+      auditLog: [{
+        timestamp: new Date().toISOString(),
+        action: 'EXECUTE',
+        details: `Skill ${this.id} executed successfully`
+      }]
+    };
+  }
+  
+  protected createFailure(error: string, options?: {
+    confidence?: number;
+    verdict?: 'COMPLIANT' | 'NON_COMPLIANT' | 'WARNING' | 'UNKNOWN';
+  }): SkillResult {
+    return {
+      success: false,
+      confidence: options?.confidence ?? 0,
+      verdict: options?.verdict ?? 'NON_COMPLIANT',
+      errors: [error],
+      auditLog: [{
+        timestamp: new Date().toISOString(),
+        action: 'EXECUTE_FAILED',
+        details: `Skill ${this.id} failed: ${error}`
+      }]
+    };
+  }
 }

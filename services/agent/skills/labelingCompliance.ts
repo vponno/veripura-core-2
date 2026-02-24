@@ -1,9 +1,11 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export class LabelingComplianceSkill implements Skill {
     id = 'labeling_compliance';
     name = 'Labeling Compliance';
     description = 'Checks for mandatory label information like allergens and net weight.';
+    public category = SkillCategory.REGULATORY;
 
     async execute(payload: any): Promise<SkillResult> {
         const { labelText, jurisdiction } = payload;

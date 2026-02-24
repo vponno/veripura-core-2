@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface TariffOptimizerInput {
     product: string;
@@ -22,6 +23,7 @@ export class TariffOptimizerSkill implements Skill {
     id = 'tariff_optimizer';
     name = 'Tariff Optimizer';
     description = 'Calculates import duties and identifies Free Trade Agreement (FTA) or GSP savings opportunities.';
+    public category = SkillCategory.TRADE;
 
     // Mock Database of Trade Agreements
     // In production, this would query an external Duty API or internal DB

@@ -1,5 +1,5 @@
 
-import { SkillRegistry } from '../services/agent/SkillRegistry';
+import { SkillRegistry } from '../services/agent/skills/skillRegistry';
 import { ModelRegistry } from '../services/agent/ModelRegistry';
 import {
     RegulatoryCheckSkill,

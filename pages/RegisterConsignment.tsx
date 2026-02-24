@@ -312,25 +312,31 @@ const RegisterConsignment: React.FC = () => {
     const handleUploadForStep = async (docType: string, file: File) => {
         if (!consignment) return;
         setLoading(true);
+        resetProgress();
         console.log("Starting atomic upload process for:", docType);
 
         try {
             // 1. Analyze
+            updateProgress('analyze', 'in_progress', 'Analyzing document with AI...');
             console.log("Step 1: AI Analysis...");
             const analysisResult = await validationService.analyzeDocument(file, { exportFrom, importTo });
+            updateProgress('analyze', 'completed', 'Document analyzed successfully');
             console.log("Step 1 Complete.");
 
             // 2. Encrypt & Prepare Storage (Returns roadmap updates)
+            updateProgress('create', 'in_progress', 'Encrypting and preparing storage...');
             console.log("Step 2: Encryption & Preparation...");
             const uploadResult = await consignmentService.uploadDocumentStep(consignment.id, docType, file, analysisResult);
-            console.log("Step 2 Complete.");
+            updateProgress('create', 'completed', 'Storage prepared');
 
             // 3. Guardian Assessment (Returns roadmap & agentState updates)
+            updateProgress('assess', 'in_progress', 'Guardian Specialists performing deep assessment...');
             console.log("Step 3: Guardian Assessment...");
             const assessment = await agentService.assessDocument(consignment.id, docType, analysisResult, {
                 ...consignment,
                 roadmap: uploadResult.updates.roadmap
             }, file);
+            updateProgress('assess', 'completed', 'Specialist assessment complete');
             console.log("Step 3 Complete.");
 
             // 4. ATOMIC UPDATE: Single write to Firestore
@@ -394,9 +400,15 @@ const RegisterConsignment: React.FC = () => {
 
         if (missingFields.length > 0) {
             alert(`Cannot decrypt: Missing ${missingFields.join(", ")}. The document may still be processing or there was an upload error.`);
-            console.error("Preview failed - missing data:", { data, consignment: { encryptionKeyJwk: !!consignment?.encryptionKeyJwk } });
+            console.error("Preview failed - missing data:", {
+                data,
+                consignment: { encryptionKeyJwk: !!consignment?.encryptionKeyJwk },
+                docType
+            });
             return;
         }
+
+        console.log(`[RegisterConsignment] Decrypting ${docType}. IV: ${data.fileIv}`);
 
         try {
             // 1. Fetch Encrypted Blob
@@ -428,16 +440,30 @@ const RegisterConsignment: React.FC = () => {
         console.log(`Refreshing roadmap for ${origin} -> ${dest} (${product}, HS: ${hsCode})`);
         const aiDocs = await complianceService.getRequiredDocuments(product, origin, dest, hsCode);
 
-        // 2. Build Roadmap Object
-        const dynamicRoadmap: any = {};
+        // 2. Build Roadmap Object - MERGING with existing data if available
+        const currentRoadmap = consignment?.roadmap || {};
+        const dynamicRoadmap: any = { ...currentRoadmap };
+
         aiDocs.forEach(d => {
-            dynamicRoadmap[d.name] = {
-                required: d.isMandatory !== false,
-                status: 'Pending',
-                description: d.description,
-                category: d.category,
-                issuingAgency: d.issuingAgency || 'Regulatory Authority'
-            };
+            if (dynamicRoadmap[d.name]) {
+                // Preserve existing upload data, just update meta if needed
+                dynamicRoadmap[d.name] = {
+                    ...dynamicRoadmap[d.name],
+                    description: d.description || dynamicRoadmap[d.name].description,
+                    category: d.category || dynamicRoadmap[d.name].category,
+                    issuingAgency: d.issuingAgency || dynamicRoadmap[d.name].issuingAgency || 'Regulatory Authority',
+                    required: d.isMandatory !== false
+                };
+            } else {
+                // New requirement
+                dynamicRoadmap[d.name] = {
+                    required: d.isMandatory !== false,
+                    status: 'Pending',
+                    description: d.description,
+                    category: d.category,
+                    issuingAgency: d.issuingAgency || 'Regulatory Authority'
+                };
+            }
         });
 
         // 3. Merge Manual Requirements
@@ -619,18 +645,8 @@ const RegisterConsignment: React.FC = () => {
                 poResult.iotaTxHash ? 'Anchored to blockchain' : 'Blockchain anchoring skipped');
             updateProgress('guardian', 'completed', 'Guardian assessment complete');
 
-            // Show sub-agent notifications
-            if (poResult.agentResult?.activityLog) {
-                const notifications = poResult.agentResult.activityLog.map((activity: any, idx: number) => ({
-                    id: `agent-${idx}-${Date.now()}`,
-                    agentName: activity.agentName,
-                    status: activity.status === 'success' ? 'completed' : 'failed' as 'completed' | 'failed',
-                    message: activity.summary?.substring(0, 100) + (activity.summary?.length > 100 ? '...' : '') || 'Analysis complete',
-                    documentsFound: activity.documentsIdentified?.length || 0,
-                    timestamp: Date.now()
-                }));
-                setSubAgentNotifications(notifications);
-            }
+            // Specialist findings are now displayed inline in the compliance roadmap cards
+            // so we don't need to show them as separate notification popups
 
             setStatusMessage("✅ Processing complete! Finalizing...");
 
@@ -885,6 +901,7 @@ const RegisterConsignment: React.FC = () => {
         issuingAgency: data.issuingAgency,
         isMandatory: data.isMandatory,
         fileUrl: data.fileUrl,
+        fileIv: data.fileIv,
         iotaExplorerUrl: data.iotaExplorerUrl,
         iotaTxHash: data.iotaTxHash,
         iotaTxCost: data.iotaTxCost,
@@ -1012,7 +1029,7 @@ const RegisterConsignment: React.FC = () => {
 
             {/* Shipment Logistics (Conditionally Rendered) */}
             {(hasPackingList || consignment?.products?.[0]?.packaging || consignment?.products?.[0]?.volume || consignment?.products?.[0]?.weight) && (
-                <div className="bg-slate-50 rounded-3xl border border-slate-200 p-8 opacity-80 hover:opacity-100 transition-opacity animate-in fade-in slide-in-from-bottom-4">
+                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 opacity-80 hover:opacity-100 transition-opacity animate-in fade-in slide-in-from-bottom-4">
                     <h3 className="font-bold text-lg mb-6 flex items-center gap-2 text-slate-700">
                         <Package className="text-slate-500" /> Shipment Logistics
                         <span className="text-xs font-normal bg-slate-200 px-2 py-1 rounded text-slate-500 ml-2">Synced from Packing List</span>
@@ -1030,7 +1047,7 @@ const RegisterConsignment: React.FC = () => {
                                     handleFieldChange('products', newProducts);
                                 }}
                                 onBlur={() => handleFieldBlur('products', consignment?.products)}
-                                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-fuchsia-500 outline-none"
+                                className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500 outline-none"
                                 placeholder="e.g. 200 Cartons"
                             />
                         </div>
@@ -1047,7 +1064,7 @@ const RegisterConsignment: React.FC = () => {
                                     handleFieldChange('products', newProducts);
                                 }}
                                 onBlur={() => handleFieldBlur('products', consignment?.products)}
-                                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-fuchsia-500 outline-none"
+                                className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500 outline-none"
                                 placeholder="e.g. 10 cbm"
                             />
                         </div>
@@ -1063,7 +1080,7 @@ const RegisterConsignment: React.FC = () => {
                                     handleFieldChange('products', newProducts);
                                 }}
                                 onBlur={() => handleFieldBlur('products', consignment?.products)}
-                                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-fuchsia-500 outline-none"
+                                className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-fuchsia-500 outline-none"
                                 placeholder="e.g. 5200 kg"
                             />
                         </div>
@@ -1323,12 +1340,6 @@ const RegisterConsignment: React.FC = () => {
                 )
             }
 
-
-            {/* Sub-Agent Real-time Notifications */}
-            <SubAgentNotifier
-                notifications={subAgentNotifications}
-                onDismiss={(id) => setSubAgentNotifications(prev => prev.filter(n => n.id !== id))}
-            />
         </div>
     );
 };

@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface DigitalProductPassportInput {
     productId: string;
@@ -19,6 +20,7 @@ export class DigitalProductPassportSkill implements Skill {
     id = 'digital_product_passport';
     name = 'Digital Product Passport Builder';
     description = 'Assembles full lifecycle data (repairability, recycling, carbon footprint) for EU Digital Product Passports per CIRPASS/ESPR standards.';
+    public category = SkillCategory.EMERGING;
 
     private requiredSections = [
         'product_identity',

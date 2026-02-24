@@ -69,17 +69,18 @@ const Consignments: React.FC = () => {
         <div className="max-w-5xl mx-auto space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-900">My Consignments</h2>
-                    <p className="text-slate-500">Manage your export compliance records and roadmaps.</p>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">My Consignments</h2>
+                    <p className="text-slate-500 dark:text-slate-400">Manage your export compliance records and roadmaps.</p>
                 </div>
 
                 <div className="flex gap-3">
                     <button
                         onClick={async () => {
+                            if (!currentUser?.uid) return;
                             if (window.confirm("⚠️ ARCHIVE ALL? \n\nThis will move ALL active consignments to the archive. This action cannot be easily undone via UI.")) {
                                 try {
                                     setLoading(true);
-                                    const count = await consignmentService.archiveAllConsignments();
+                                    const count = await consignmentService.archiveAllConsignments(currentUser.uid);
                                     alert(`Archived ${count} consignments.`);
                                     fetchConsignments(); // Refresh list
                                 } catch (e) {
@@ -89,7 +90,7 @@ const Consignments: React.FC = () => {
                                 }
                             }
                         }}
-                        className="px-4 py-2 bg-white text-red-600 border border-red-200 hover:bg-red-50 rounded-lg flex items-center gap-2 transition-colors font-medium"
+                        className="px-4 py-2 bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-2 transition-colors font-medium"
                     >
                         <Archive size={18} /> Archive All
                     </button>
@@ -130,9 +131,9 @@ const Consignments: React.FC = () => {
                                 <div className="flex-1">
                                     <div className="flex justify-between items-start mb-2">
                                         <div className="flex items-center gap-2">
-                                            <span className={`px - 2 py - 1 text - xs font - bold uppercase tracking - wide rounded ${item.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                                            <span className={`px-2 py-1 text-xs font-bold uppercase tracking-wide rounded ${item.status === 'Completed' ? 'bg-green-100 text-green-800' :
                                                 item.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
-                                                } `}>
+                                                }`}>
                                                 {item.status}
                                             </span>
                                             <span className="text-xs text-slate-400 font-mono">#{item.id?.slice(0, 6)}</span>

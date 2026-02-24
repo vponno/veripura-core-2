@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface FoodSafetyAuditInput {
     standard: 'BRCGS' | 'HACCP' | 'GMP' | 'FSSC 22000' | 'SQF' | 'ISO 22000';
@@ -16,6 +17,7 @@ export class FoodSafetyAuditSkill implements Skill {
     id = 'food_safety_audit';
     name = 'Food Safety Audit Specialist';
     description = 'Analyzes technical food safety audit reports against GFSI-benchmarked standards.';
+    public category = SkillCategory.STANDARDS;
 
     async execute(input: FoodSafetyAuditInput): Promise<SkillResult> {
         const { standard, grade, ccpValidationDate } = input;

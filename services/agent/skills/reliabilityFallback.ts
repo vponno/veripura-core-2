@@ -1,4 +1,5 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export interface CircuitBreakerConfig {
     failureThreshold: number;
@@ -28,6 +29,7 @@ export class ReliabilityFallbackSkill implements Skill {
     id = 'reliability_fallback';
     name = 'Circuit Breaker & Fallback';
     description = 'Detects API failures or timeouts and triggers deterministic fallback logic (e.g., regex vs. LLM).';
+    public category = SkillCategory.META;
 
     private circuitBreakers: Map<string, CircuitBreakerState> = new Map();
     private defaultConfig: CircuitBreakerConfig = {

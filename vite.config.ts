@@ -1,7 +1,9 @@
+import { fileURLToPath, URL } from 'node:url';
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { createHtmlPlugin } from 'vite-plugin-html';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
@@ -12,6 +14,14 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
+      nodePolyfills({
+        globals: {
+          Buffer: true,
+          global: true,
+          process: true,
+        },
+      }),
+
       createHtmlPlugin({
         minify: true,
         inject: {
@@ -34,17 +44,10 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
-        'fs': path.resolve(__dirname, 'fs-mock'),
-        'path': path.resolve(__dirname, 'fs-mock'),
-        'os': path.resolve(__dirname, 'fs-mock'),
-        'child_process': path.resolve(__dirname, 'fs-mock'),
-        'stream': path.resolve(__dirname, 'fs-mock'),
-        'crypto': path.resolve(__dirname, 'fs-mock'),
-        'url': path.resolve(__dirname, 'fs-mock'),
-        'https': path.resolve(__dirname, 'fs-mock'),
-        'http': path.resolve(__dirname, 'fs-mock')
+        '@': fileURLToPath(new URL('.', import.meta.url)),
       }
     }
   };
 });
+
+

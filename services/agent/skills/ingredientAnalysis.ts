@@ -1,9 +1,11 @@
 import { Skill, SkillResult } from './skillRegistry';
+import { SkillCategory } from '../types';
 
 export class IngredientAnalysisSkill implements Skill {
     id = 'ingredient_analysis';
     name = 'Ingredient Analysis';
     description = 'Analyzes ingredient lists for banned substances or allergens.';
+    public category = SkillCategory.QUALITY;
 
     async execute(payload: any): Promise<SkillResult> {
         const { ingredients, destination } = payload;

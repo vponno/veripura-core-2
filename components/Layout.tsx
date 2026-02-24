@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, History, Settings, UserCircle, Menu, X, LogOut, Briefcase, ShieldAlert, Database, Laptop, Sun, Moon, PlusCircle } from 'lucide-react';
+import { LayoutDashboard, FileText, Settings, UserCircle, Menu, X, LogOut, Briefcase, ShieldAlert, Database, Laptop, Sun, Moon, PlusCircle } from 'lucide-react';
 import { UserRole } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -27,7 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ children, userRole, setUserRole }) => {
 
     { name: 'Review Hub', path: '/admin-review', icon: <ShieldAlert size={20} />, adminOnly: true },
     { name: 'Data Export', path: '/admin/export', icon: <Database size={20} />, adminOnly: true },
-    { name: 'History', path: '/supply-chain', icon: <History size={20} /> },
+
     { name: 'My Wallet', path: '/wallet', icon: <UserCircle size={20} /> },
   ];
 

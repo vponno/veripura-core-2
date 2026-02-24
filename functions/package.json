@@ -16,7 +16,9 @@
     "dependencies": {
         "firebase-admin": "^11.8.0",
         "firebase-functions": "^4.3.1",
-        "@google-cloud/bigquery": "^7.3.0"
+        "@google-cloud/bigquery": "^7.3.0",
+        "@llamaindex/llama-cloud": "^1.6.0",
+        "llamaindex": "^0.12.1"
     },
     "devDependencies": {
         "typescript": "^4.9.0"
