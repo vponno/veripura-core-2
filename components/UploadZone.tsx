@@ -99,21 +99,21 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUpload, isProcessing, 
                 )}
 
                 {isProcessing && (
-                    <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center border border-primary/20 shadow-lg min-h-[200px]">
-                        <Loader2 size={32} className="animate-spin text-primary mb-2" />
-                        <p className="font-bold text-slate-800 text-sm">Verifying...</p>
+                    <div className="absolute inset-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center border border-blue-500/20 shadow-lg min-h-[200px]">
+                        <Loader2 size={32} className="animate-spin text-blue-600 dark:text-blue-400 mb-2" />
+                        <p className="font-bold text-slate-800 dark:text-slate-100 text-sm">Verifying...</p>
                     </div>
                 )}
 
                 {selectedFile && previewUrl ? (
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col gap-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-slate-50 text-slate-600 rounded-lg flex items-center justify-center shrink-0">
+                                <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg flex items-center justify-center shrink-0">
                                     <FileText size={20} />
                                 </div>
                                 <div>
-                                    <p className="font-bold text-slate-900 text-sm truncate max-w-[200px]">{selectedFile.name}</p>
+                                    <p className="font-bold text-slate-900 dark:text-white text-sm truncate max-w-[200px]">{selectedFile.name}</p>
                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
                                 </div>
                             </div>
@@ -129,9 +129,9 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUpload, isProcessing, 
                             <button
                                 onClick={handleConfirm}
                                 disabled={isProcessing}
-                                className="w-full py-2 rounded-lg font-bold text-xs uppercase tracking-wider bg-slate-900 text-white shadow-md hover:bg-black flex items-center justify-center gap-2 transition-all"
+                                className="w-full py-2 rounded-lg font-bold text-xs uppercase tracking-wider bg-slate-900 dark:bg-slate-700 text-white shadow-md hover:bg-black dark:hover:bg-slate-600 flex items-center justify-center gap-2 transition-all"
                             >
-                                <CheckCircle size={14} className="text-primary" />
+                                <CheckCircle size={14} className="text-emerald-500" />
                                 {buttonText || "Verify Document"}
                             </button>
                         </div>
@@ -146,8 +146,8 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onUpload, isProcessing, 
                         className={`
               relative w-full h-32 rounded-xl border-2 border-dashed transition-all duration-300 flex flex-col items-center justify-center gap-2 cursor-pointer
               ${dragActive
-                                ? "border-primary bg-primary/5"
-                                : "border-slate-200 bg-slate-50 hover:border-primary/50 hover:bg-white"
+                                ? "border-blue-600 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20"
+                                : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:border-blue-500/50 hover:bg-white dark:hover:bg-slate-800"
                             }
             `}
                     >

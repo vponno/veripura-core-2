@@ -15,6 +15,14 @@ export const COUNTRIES = [
     "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Denmark", "Estonia", "Finland", "France",
     "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands",
     "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden",
-    // Others
-    "United States", "United Kingdom", "China", "Japan", "South Korea", "Australia", "Canada", "India", "Brazil", "Switzerland"
+    // Americas
+    "United States", "Canada", "Brazil", "Mexico", "Argentina", "Chile", "Peru", "Colombia", "Ecuador",
+    // Middle East
+    "United Arab Emirates", "Saudi Arabia", "Oman", "Qatar", "Kuwait", "Bahrain", "Jordan", "Lebanon", "Turkey", "Israel",
+    // Asia Pacific
+    "China", "Japan", "South Korea", "India", "Australia", "New Zealand", "Taiwan", "Hong Kong", "Pakistan", "Bangladesh",
+    // Africa
+    "South Africa", "Nigeria", "Kenya", "Egypt", "Morocco", "Ghana", "Ethiopia", "Tanzania",
+    // Other
+    "United Kingdom", "Switzerland", "Norway", "Iceland", "Russia", "Kazakhstan"
 ].sort();

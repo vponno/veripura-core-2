@@ -1,10 +1,25 @@
 import { db, storage } from './lib/firebase';
-import { collection, addDoc, updateDoc, doc, getDoc, setDoc, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, getDoc, setDoc, query, where, getDocs, deleteDoc, FieldPath, onSnapshot, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, listAll, deleteObject } from 'firebase/storage';
 import { EncryptionService } from './encryptionService';
 import { iotaService } from './iotaService';
 import { Ed25519Keypair } from '@iota/iota-sdk/keypairs/ed25519';
 import { logger } from './lib/logger';
+
+// Helper: Remove undefined values for Firestore compatibility
+const removeUndefined = (obj: any): any => {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(item => removeUndefined(item));
+    
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined) {
+            cleaned[key] = removeUndefined(value);
+        }
+    }
+    return cleaned;
+};
 
 export interface AgentMessage {
     id: string;
@@ -20,6 +35,8 @@ export interface Consignment {
     ownerId: string;
     exportFrom: string;
     importTo: string;
+    sellerName?: string;
+    buyerName?: string;
     status: 'Draft' | 'In Progress' | 'Completed' | 'Archived' | 'Held at Customs';
     createdAt: string;
     encryptionKeyJwk?: string; // Storing key for MVP (In prod, use user's private key)
@@ -121,15 +138,17 @@ export const consignmentService = {
 
             if (pk) {
                 logger.log(`[ConsignmentService] Creating L1 Object for ${internalId}...`);
+
+                // Use actual trade data from the 'data' argument if provided, or default to unknowns
                 const iotaObj = await iotaService.registerConsignment(
                     pk,
-                    internalId, // Passing Internal ID for on-chain map
+                    internalId,
                     {
-                        sellerName: 'Exporter Inc', // These details are hashed, not stored
-                        buyerName: 'Importer LLC',
+                        sellerName: (data as any)?.sellerName || 'Unknown',
+                        buyerName: (data as any)?.buyerName || 'Unknown',
                         originCountry: data.exportFrom || 'Unknown',
                         destinationCountry: data.importTo || 'Unknown',
-                        products: [], // Optimized out
+                        products: data.products?.map(p => p.name) || [],
                         documentHashes: []
                     }
                 );
@@ -146,11 +165,21 @@ export const consignmentService = {
         return { id: internalId, iotaObjectId, ...consignment };
     },
 
-    getConsignment: async (id: string) => {
+    // 1. Get a single consignment (One-time Fetch)
+    getConsignment: async (id: string): Promise<Consignment | null> => {
         const docRef = doc(db, 'consignments', id);
-        const snapshot = await getDoc(docRef);
-        if (snapshot.exists()) return { id: snapshot.id, ...snapshot.data() } as Consignment;
-        return null;
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Consignment : null;
+    },
+
+    // 1b. Subscribe to a consignment (Real-time)
+    subscribeToConsignment: (id: string, callback: (consignment: Consignment) => void) => {
+        const docRef = doc(db, 'consignments', id);
+        return onSnapshot(docRef, (snap) => {
+            if (snap.exists()) {
+                callback({ id: snap.id, ...snap.data() } as Consignment);
+            }
+        });
     },
 
     deleteConsignment: async (id: string) => {
@@ -162,8 +191,30 @@ export const consignmentService = {
 
     // Generic Update (for partial updates like Product, HS Code, Roadmap)
     updateConsignment: async (id: string, data: any) => {
+        // Debug: Log ALL keys and values to identify the issue
+        console.log('🔍 updateConsignment called with data keys:', Object.keys(data || {}));
+
+        if (data && typeof data === 'object') {
+            for (const [key, value] of Object.entries(data)) {
+                console.log(`🔍   Key: "${key}" (type: ${typeof key}), Value type: ${typeof value}`);
+                if (typeof key !== 'string') {
+                    console.error(`🔍💥 NON-STRING KEY DETECTED! Key:`, key, 'Full data:', JSON.stringify(data).slice(0, 500));
+                    throw new Error(`Non-string key in updateDoc: ${String(key)}`);
+                }
+            }
+        }
+        
+        // Remove undefined values for Firestore compatibility
+        const cleanData = removeUndefined(data);
+        
         const docRef = doc(db, 'consignments', id);
-        await updateDoc(docRef, data);
+        try {
+            await updateDoc(docRef, cleanData);
+        } catch (err: any) {
+            console.error('🔍💥 updateDoc FAILED:', err.message);
+            console.error('🔍💥 Data being written:', JSON.stringify(cleanData).slice(0, 1000));
+            throw err;
+        }
     },
 
 
@@ -172,18 +223,12 @@ export const consignmentService = {
     updateConsignmentRoute: async (consignmentId: string, newOrigin: string, newDestination: string, analysisResult: any, flaggingDocType?: string) => {
         const docRef = doc(db, 'consignments', consignmentId);
 
-        // 1. Update Core Route
-        await updateDoc(docRef, {
-            exportFrom: newOrigin,
-            importTo: newDestination
-        });
-
-        // 2. Fetch current roadmap
+        // 1. Fetch current roadmap
         const snap = await getDoc(docRef);
         const currentRoadmap = snap.exists() ? snap.data().roadmap || {} : {};
         const updatedRoadmap = { ...currentRoadmap };
 
-        // 3. Resolve the Flagging Document (The "Self-Correction")
+        // 2. Resolve the Flagging Document (The "Self-Correction")
         // If we know which document caused the mismatch, we "heal" it now.
         if (flaggingDocType && updatedRoadmap[flaggingDocType]) {
             const docItem = updatedRoadmap[flaggingDocType];
@@ -211,7 +256,7 @@ export const consignmentService = {
             }
         }
 
-        // 4. Pre-Fill Roadmap from AI Analysis Checklist
+        // 3. Pre-Fill Roadmap from AI Analysis Checklist
         // If the AI found "requiredNextDocuments", we use them to populate the roadmap.
         if (analysisResult && analysisResult.requiredNextDocuments) {
             analysisResult.requiredNextDocuments.forEach((reqDoc: any) => {
@@ -227,18 +272,38 @@ export const consignmentService = {
             });
         }
 
-        await updateDoc(docRef, { roadmap: updatedRoadmap });
+        // 4. Update core fields and roadmap items atomically
+        const updates: any = {
+            exportFrom: newOrigin,
+            importTo: newDestination
+        };
+
+        // Convert roadmap changes to atomic field updates
+        Object.entries(updatedRoadmap).forEach(([key, value]) => {
+            // Sanitize key and use dot notation
+            const safeKey = String(key)
+                .replace(/^[.]+/, '')
+                .replace(/[~*\/\[\\\]]/g, '_')
+                .trim();
+            if (safeKey) {
+                updates[`roadmap.${safeKey}`] = value;
+            }
+        });
+
+        await updateDoc(docRef, updates);
     },
 
     // Delete a specific item from the roadmap (for removing Advised items)
     deleteRoadmapItem: async (consignmentId: string, docName: string) => {
         const docRef = doc(db, 'consignments', consignmentId);
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-            const currentRoadmap = snap.data().roadmap || {};
-            const updatedRoadmap = { ...currentRoadmap };
-            delete updatedRoadmap[docName];
-            await updateDoc(docRef, { roadmap: updatedRoadmap });
+        // Sanitize docName for Firestore field path
+        const safeDocName = String(docName)
+            .replace(/^[.]+/, '')
+            .replace(/[~*\/\[\\\]]/g, '_')
+            .trim();
+        if (safeDocName) {
+            // ATOMIC DELETION: Use deleteField() with FieldPath
+            await updateDoc(docRef, new FieldPath('roadmap', safeDocName), deleteField());
         }
     },
 
@@ -369,43 +434,58 @@ export const consignmentService = {
         await addDoc(collection(db, 'training_dataset'), {
             consignmentId,
             docType,
-            analysis: analysisResult,
+            analysis: removeUndefined(analysisResult),
             validationLevel: analysisResult.validationLevel,
             documentHash,
             iotaTxHash: iotaTxHash || null,
             iotaTxCost: iotaTxCost || null,
             iotaError: iotaError || null,
-            fileUrl, // Store URL for multimodal training / audit
-            storagePath, // Store path for bulk download
+            fileUrl: fileUrl || null,  // Use null instead of undefined
+            storagePath: storagePath || null,  // Use null instead of undefined
             timestamp: new Date().toISOString(),
             status: 'labeled_by_ai'
         });
 
-        // 8. Prepare Roadmap Updates (Don't commit yet to allow atomicity)
-        const currentRoadmap = consignment.roadmap || {};
-        const updatedRoadmap = { ...currentRoadmap };
+        // 8. ATOMIC UPDATE: Send only the specific document data to avoid clobbering
+        const roadmapUpdates: any = {};
+        const docRef = doc(db, 'consignments', consignmentId);
 
-        // Add the analyzed document
-        updatedRoadmap[docType] = {
-            required: true,
-            status: analysisResult.validationLevel === 'GREEN' ? 'Validated' :
-                analysisResult.validationLevel === 'YELLOW' ? 'Pending Review' : 'Rejected',
-            fileUrl: fileUrl,
-            fileIv: ivStr,
-            analysis: analysisResult,
-            uploadedAt: new Date().toISOString(),
-            documentHash,
-            iotaTxHash: iotaTxHash || null,
-            iotaExplorerUrl: iotaExplorerUrl || null,
-            iotaTxCost: iotaTxCost || null,
-            iotaError: iotaError || null
-        };
+        // Sanitize docType for Firestore field path
+        const safeDocType = String(docType)
+            .replace(/^[.]+/, '')
+            .replace(/[~*\/\[\\\]]/g, '_')
+            .trim();
 
-        // If specific future documents are recommended (and we aren't in a route mismatch that needs fixing first), we could add them here.
+        // Update the current document
+        if (safeDocType) {
+            roadmapUpdates[`roadmap.${safeDocType}`] = {
+                required: true,
+                status: analysisResult.validationLevel === 'GREEN' ? 'Validated' :
+                    analysisResult.validationLevel === 'YELLOW' ? 'Pending Review' : 'Rejected',
+                fileUrl: fileUrl,
+                fileIv: ivStr,
+                fileType: file.type,
+                analysis: analysisResult,
+                uploadedAt: new Date().toISOString(),
+                documentHash,
+                iotaTxHash: iotaTxHash || null,
+                iotaExplorerUrl: iotaExplorerUrl || null,
+                iotaTxCost: iotaTxCost || null,
+                iotaError: iotaError || null
+            };
+        }
+
+        // Add any recommended future documents (also atomically)
         if (!analysisResult.routeMismatch && analysisResult.requiredNextDocuments) {
             analysisResult.requiredNextDocuments.forEach((reqDoc: any) => {
-                if (!updatedRoadmap[reqDoc.name]) {
-                    updatedRoadmap[reqDoc.name] = {
+                // Sanitize doc name for Firestore
+                const safeReqDocName = String(reqDoc.name || 'Unknown')
+                    .replace(/^[.]+/, '')
+                    .replace(/[~*\/\[\\\]]/g, '_')
+                    .trim();
+
+                if (safeReqDocName) {
+                    roadmapUpdates[`roadmap.${safeReqDocName}`] = {
                         required: true,
                         status: 'Pending',
                         description: reqDoc.description,
@@ -415,21 +495,52 @@ export const consignmentService = {
             });
         }
 
+        await updateDoc(docRef, roadmapUpdates);
+
+        // Return updates for local optimistic state if needed (though onSnapshot handles this)
         return {
             success: true,
             documentHash,
             iotaExplorerUrl,
             flagged: shouldFlag,
             updates: {
-                roadmap: updatedRoadmap
+                roadmap: roadmapUpdates
             }
         };
     },
 
 
+    // Safe update for roadmap item (prevents dot-notation corruption)
+    updateRoadmapItem: async (consignmentId: string, docType: string, data: any) => {
+        const docRef = doc(db, 'consignments', consignmentId);
+        // Sanitize docType for Firestore field path
+        const safeDocType = String(docType)
+            .replace(/^[.]+/, '')
+            .replace(/[~*\/\[\\\]]/g, '_')
+            .trim();
+        if (safeDocType) {
+            // Remove undefined values for Firestore compatibility
+            const cleanData = removeUndefined(data);
+            console.log('🔍 updateRoadmapItem:', safeDocType, 'data keys:', Object.keys(cleanData || {}));
+            try {
+                await updateDoc(docRef, new FieldPath('roadmap', safeDocType), cleanData);
+            } catch (err: any) {
+                console.error('🔍💥 updateRoadmapItem FAILED:', err.message);
+                console.error('🔍💥 Data:', JSON.stringify(cleanData).slice(0, 500));
+                throw err;
+            }
+        }
+    },
+
     // 9. Resolve Flagged Document (Admin Action from UI) & RLHF Loop
-    resolveFlaggedDocument: async (consignmentId: string, docType: string, decision: 'approved' | 'rejected', reviewerId: string = 'admin') => {
+    resolveFlaggedDocument: async (consignmentId: string, docType: string, decision: 'approved' | 'rejected', reasoning: string = '', softLabel: number = 1.0, reviewerId: string = 'admin') => {
         const consignmentRef = doc(db, 'consignments', consignmentId);
+
+        // Sanitize docType for Firestore field path
+        const safeDocType = String(docType)
+            .replace(/^[.]+/, '')
+            .replace(/[~*\/\[\\\]]/g, '_')
+            .trim();
 
         // 1. Fetch current data
         const consignmentSnap = await getDoc(consignmentRef);
@@ -437,9 +548,9 @@ export const consignmentService = {
 
         const data = consignmentSnap.data();
         const roadmap = data.roadmap || {};
-        const docData = roadmap[docType];
+        const docData = roadmap[safeDocType];
 
-        if (!docData) throw new Error("Document not found in roadmap");
+        if (!docData) throw new Error(`Document "${safeDocType}" not found in roadmap`);
 
         // 2. Update Consignment Roadmap
         const newStatus = decision === 'approved' ? 'Validated' : 'Rejected';
@@ -454,13 +565,14 @@ export const consignmentService = {
                 requiresHumanReview: false, // Clear flag
                 adminDecision: decision,
                 adminDecisionAt: new Date().toISOString(),
+                adminReasoning: reasoning,
+                adminConfidence: softLabel,
                 reviewerId
             }
         };
 
-        await updateDoc(consignmentRef, {
-            [`roadmap.${docType}`]: updatedDocData
-        });
+        // Use FieldPath to safely update even if docType contains dots (e.g. "P.O.")
+        await updateDoc(consignmentRef, new FieldPath('roadmap', safeDocType), updatedDocData);
 
         // 3. Resolve from Review Queue (if exists)
         const q = query(
@@ -476,7 +588,14 @@ export const consignmentService = {
             await updateDoc(doc(db, 'review_queue', queueDoc.id), {
                 status: decision,
                 resolvedAt: new Date().toISOString(),
-                resolverId: reviewerId
+                resolverId: reviewerId,
+                humanReview: {
+                    decision,
+                    reasoning,
+                    softLabel,
+                    reviewer: reviewerId,
+                    reviewedAt: new Date().toISOString()
+                }
             });
         }
 
@@ -493,11 +612,6 @@ export const consignmentService = {
             const aiData = trainingDoc.data();
             const aiValidationLevel = aiData.validationLevel; // e.g., 'YELLOW'
 
-            // Logic: 
-            // AI says YELLOW/RED. 
-            // Human APPROVE -> AI was WRONG (False Positive).
-            // Human REJECT -> AI was RIGHT (True Positive).
-
             let humanLabel = 'UNCERTAIN';
             if (decision === 'approved') {
                 humanLabel = aiValidationLevel === 'GREEN' ? 'AGREED' : 'DISAGREED_FALSE_POSITIVE';
@@ -510,11 +624,29 @@ export const consignmentService = {
                     decision,
                     reviewer: reviewerId,
                     reviewedAt: new Date().toISOString(),
-                    label: humanLabel
+                    label: humanLabel,
+                    reasoning,
+                    confidence: softLabel
                 },
                 status: 'human_verified'
             });
             logger.log(`[ConsignmentService] RLHF Loop: Captured ${humanLabel}`);
+        } else {
+            // Create training data if it doesn't exist (e.g. legacy documents)
+            await addDoc(collection(db, 'training_dataset'), {
+                consignmentId,
+                docType,
+                analysis: docData.analysis,
+                humanReview: {
+                    decision,
+                    reviewer: reviewerId,
+                    reviewedAt: new Date().toISOString(),
+                    reasoning,
+                    confidence: softLabel
+                },
+                status: 'human_verified',
+                timestamp: new Date().toISOString()
+            });
         }
 
         return updatedDocData;

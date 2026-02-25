@@ -36,20 +36,13 @@ export class SocialComplianceWhistleblower extends SubAgent {
             response = `**Social Compliance Watchlist Report**\n`;
             response += `🔍 Screening entities against global NGO and labor watchlists...\n\n`;
 
-            // Simulation of a Social Compliance Watchlist Database (e.g., derived from Clean Clothes Campaign, Amnesty, etc.)
-            const watchlist = [
-                { name: 'Generic Textiles Ltd', violation: 'Forced Labor Allegations (2024)', status: 'Critical', source: 'NGO Report #122' },
-                { name: 'EcoPulp Solutions', violation: 'Illegal Deforestation (2025)', status: 'Warning', source: 'Environmental Watch' },
-                { name: 'Bright Harvest Co', violation: 'Child Labor Infraction (2023)', status: 'Critical', source: 'Local Labor Audit' }
-            ];
+            // Security Safeguard: Real-time watchlist screening requires a connection to local or global ESG risk databases.
+            // Currently in Evidence-Only mode.
+            const watchlist: any[] = [];
 
-            const matches = watchlist.filter(entry =>
-                entitiesToScreen.some(entity => entity.toLowerCase().includes(entry.name.toLowerCase()))
-            );
-
-            if (matches.length > 0) {
+            if (watchlist.length > 0) {
                 response += `🔴 **Watchlist Match Detected**:\n`;
-                matches.forEach(m => {
+                watchlist.forEach(m => {
                     response += `- **${m.name}**: ${m.violation}. Source: *${m.source}* [Status: **${m.status}**]\n`;
                     alerts.push({
                         severity: m.status.toLowerCase() as 'critical' | 'warning',

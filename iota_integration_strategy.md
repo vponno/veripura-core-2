@@ -8,6 +8,15 @@
 
 ## Executive Summary
 
+### Quick Start (Phase 1/2 Bridge)
+
+- **Status:** Live Deployment
+- **Tangle:** IOTA Testnet
+- **Protocol:** Rebased (MoveVM)
+- **Package ID:** `0xe2ebd82717273c0f807f95a2f59d7cbcee9c63da94b8869d13f72c22f7b4594b`
+- **Identity Module:** `veripura::supply_chain`
+- **Core Functions:** `register_consignment`, `mint_po`
+
 This document outlines VeriPura's technical integration strategy with the IOTA ecosystem, specifically:
 
 1. **Near-term**: Hash anchoring to IOTA Tangle for immutable audit trails
@@ -24,23 +33,23 @@ This document outlines VeriPura's technical integration strategy with the IOTA e
 
 **Per Consignment:**
 
-* Merkle Root Hash (batches all document hashes)
-* Forensic Verdict Metadata (Guardian Agent's decision)
-* Invalidation Events (route changes, compliance status changes)
+- Merkle Root Hash (batches all document hashes)
+- Forensic Verdict Metadata (Guardian Agent's decision)
+- Invalidation Events (route changes, compliance status changes)
 
 **What We Do NOT Anchor:**
 
-* Raw documents (privacy preservation)
-* Personal data (GDPR compliance)
-* Business-sensitive information (trade secrets)
+- Raw documents (privacy preservation)
+- Personal data (GDPR compliance)
+- Business-sensitive information (trade secrets)
 
 ### 1.2 Technical Implementation
 
 **Current Code:**
 
-* [`iotaService.ts`](../services/iotaService.ts) - Already implemented
-* Uses `@iota/sdk` npm package
-* Anchors to IOTA Tangle Mainnet
+- [`iotaService.ts`](../services/iotaService.ts) - Already implemented
+- Uses `@iota/sdk` npm package
+- Anchors to IOTA Tangle Mainnet
 
 **Anchoring Pattern**:
 
@@ -69,9 +78,9 @@ interface AnchoredData {
 
 **Benefits:**
 
-* Zero-knowledge verification (privacy preserved)
-* Third-party auditable (no trust in VeriPura required)
-* Immutable (cannot be backdated or altered)
+- Zero-knowledge verification (privacy preserved)
+- Third-party auditable (no trust in VeriPura required)
+- Immutable (cannot be backdated or altered)
 
 ---
 
@@ -81,9 +90,9 @@ interface AnchoredData {
 
 **TWIN** (Trade World Information Network) provides:
 
-* Digital identities for trade partners (verified by institutions)
-* Digital product passports (origin, certifications, sustainability)
-* Interoperability layer for existing trade systems
+- Digital identities for trade partners (verified by institutions)
+- Digital product passports (origin, certifications, sustainability)
+- Interoperability layer for existing trade systems
 
 **Source**: IOTA Foundation's trade digitization initiative
 
@@ -170,15 +179,15 @@ interface AnchoredData {
 
 **Decision**: **Hybrid Approach**
 
-* VeriPura works **standalone** (does not require TWIN to function)
-* If TWIN is available, VeriPura **enhances** with identity/passport integration
-* Feature flag: `VITE_ENABLE_TWIN_INTEGRATION`
+- VeriPura works **standalone** (does not require TWIN to function)
+- If TWIN is available, VeriPura **enhances** with identity/passport integration
+- Feature flag: `VITE_ENABLE_TWIN_INTEGRATION`
 
 **Rationale:**
 
-* Market flexibility (not locked to IOTA ecosystem)
-* Incremental adoption (deploy VeriPura first, add TWIN later)
-* Risk mitigation (if TWIN development delays, VeriPura still launches)
+- Market flexibility (not locked to IOTA ecosystem)
+- Incremental adoption (deploy VeriPura first, add TWIN later)
+- Risk mitigation (if TWIN development delays, VeriPura still launches)
 
 ---
 
@@ -190,28 +199,28 @@ IOTA uses **Move** (originally from Sui) for smart contracts.
 
 **Move's Key Properties:**
 
-* Digital assets cannot be copied (resource safety)
-* Clear ownership semantics
-* Compile-time verification (prevents entire classes of bugs)
+- Digital assets cannot be copied (resource safety)
+- Clear ownership semantics
+- Compile-time verification (prevents entire classes of bugs)
 
 **Relevance to VeriPura:**
 
-* Compliance rules are "resources" (cannot be duplicated)
-* Forensic verdicts are "assets" (ownership matters for liability)
-* Financial incentives (staking for validators) require safe asset handling
+- Compliance rules are "resources" (cannot be duplicated)
+- Forensic verdicts are "assets" (ownership matters for liability)
+- Financial incentives (staking for validators) require safe asset handling
 
 ### 3.2 Current State: No Smart Contracts
 
 **What We Have:**
 
-* Off-chain validation (Gemini AI + BigQuery)
-* On-chain anchoring (hashes only)
+- Off-chain validation (Gemini AI + BigQuery)
+- On-chain anchoring (hashes only)
 
 **What We Don't Have:**
 
-* On-chain compliance logic
-* Tokenized incentives
-* Decentralized validator network
+- On-chain compliance logic
+- Tokenized incentives
+- Decentralized validator network
 
 ### 3.3 Roadmap: Three Phases
 
@@ -219,9 +228,9 @@ IOTA uses **Move** (originally from Sui) for smart contracts.
 
 **Status**: ✅ Implemented
 
-* Merkle roots anchored to IOTA
-* No smart contracts required
-* Centralized validation (VeriPura backend)
+- Merkle roots anchored to IOTA
+- No smart contracts required
+- Centralized validation (VeriPura backend)
 
 #### **Phase 2: On-Chain Compliance Registry** (Q3 2026)
 
@@ -229,9 +238,9 @@ IOTA uses **Move** (originally from Sui) for smart contracts.
 
 **Use Case:**
 
-* Customs wants to verify compliance without trusting VeriPura's database
-* They query IOTA smart contract directly
-* Contract returns: `{ consignmentId, status, timestamp, merkleRoot }`
+- Customs wants to verify compliance without trusting VeriPura's database
+- They query IOTA smart contract directly
+- Contract returns: `{ consignmentId, status, timestamp, merkleRoot }`
 
 **Move Module Pseudocode:**
 
@@ -276,9 +285,9 @@ module VeriPura::ComplianceRegistry {
 
 **Benefits:**
 
-* Decentralized verification (no VeriPura API required)
-* Immutable verdicts (cannot be altered after publication)
-* Auditable history (all verdicts queryable on-chain)
+- Decentralized verification (no VeriPura API required)
+- Immutable verdicts (cannot be altered after publication)
+- Auditable history (all verdicts queryable on-chain)
 
 #### **Phase 3: Decentralized Validation Network** (2027+)
 
@@ -286,11 +295,11 @@ module VeriPura::ComplianceRegistry {
 
 **Concept:**
 
-* Multiple independent validators run Guardian Agents
-* Validators stake IOTA to participate
-* Consensus on compliance verdicts
-* Rewards for honest validation
-* Slashing for malicious behavior
+- Multiple independent validators run Guardian Agents
+- Validators stake IOTA to participate
+- Consensus on compliance verdicts
+- Rewards for honest validation
+- Slashing for malicious behavior
 
 **Move Module Pseudocode:**
 
@@ -327,9 +336,9 @@ module VeriPura::ValidatorNetwork {
 
 **Challenges:**
 
-* Requires economic modeling (tokenomics)
-* Requires decentralized AI inference (expensive on-chain)
-* May need hybrid approach (AI off-chain, consensus on-chain)
+- Requires economic modeling (tokenomics)
+- Requires decentralized AI inference (expensive on-chain)
+- May need hybrid approach (AI off-chain, consensus on-chain)
 
 ### 3.4 Decision Points
 
@@ -337,21 +346,21 @@ module VeriPura::ValidatorNetwork {
 
 **Arguments For:**
 
-* True decentralization (removing VeriPura as trust dependency)
-* Competitive advantage (no other compliance platform does this)
-* ADAPT/AfCFTA fit (reduces reliance on single entity)
+- True decentralization (removing VeriPura as trust dependency)
+- Competitive advantage (no other compliance platform does this)
+- ADAPT/AfCFTA fit (reduces reliance on single entity)
 
 **Arguments Against:**
 
-* Adds complexity (smart contract security audits required)
-* Gas costs (every verdict publication costs IOTA fees)
-* Maintenance burden (smart contract upgrades are hard)
+- Adds complexity (smart contract security audits required)
+- Gas costs (every verdict publication costs IOTA fees)
+- Maintenance burden (smart contract upgrades are hard)
 
 **Recommendation**: **Build Phase 2 as MVP, defer Phase 3**
 
-* Phase 2 provides immediate value (third-party verification)
-* Minimal gas costs (1 tx per consignment vs. 20 for individual documents)
-* Feasible with current team (no tokenomics design needed)
+- Phase 2 provides immediate value (third-party verification)
+- Minimal gas costs (1 tx per consignment vs. 20 for individual documents)
+- Feasible with current team (no tokenomics design needed)
 
 ---
 
@@ -374,9 +383,9 @@ module VeriPura::ValidatorNetwork {
 
 **Current Code Audit:**
 
-* ✅ We don't assume specific confirmation times
-* ✅ We use event-driven anchoring (not time-based)
-* ✅ Retry logic handles network delays
+- ✅ We don't assume specific confirmation times
+- ✅ We use event-driven anchoring (not time-based)
+- ✅ Retry logic handles network delays
 
 #### ✅ **2. Flexible Transaction Submission**
 
@@ -408,9 +417,9 @@ async function anchorToIOTA(data: AnchoredData): Promise<string> {
 
 **Future Addition Needed:**
 
-* Subscribe to IOTA network status
-* Detect consensus delays
-* Inform Guardian Agents if anchoring is degraded
+- Subscribe to IOTA network status
+- Detect consensus delays
+- Inform Guardian Agents if anchoring is degraded
 
 **Implementation Note**:
 
@@ -429,9 +438,9 @@ interface IOTANetworkMonitor {
 
 **Critical Principle:**
 
-* Guardian Agent validation does NOT depend on IOTA finality
-* IOTA is used for **proof storage**, not **validation logic**
-* Business logic remains off-chain and fast
+- Guardian Agent validation does NOT depend on IOTA finality
+- IOTA is used for **proof storage**, not **validation logic**
+- Business logic remains off-chain and fast
 
 **Current Architecture**:
 
@@ -447,9 +456,9 @@ Anchors verdict to IOTA asynchronously (background task)
 
 **Why This Matters:**
 
-* If IOTA network is congested, users still get verdicts
-* Anchoring is "best effort" (can retry later)
-* Business continuity is not IOTA-dependent
+- If IOTA network is congested, users still get verdicts
+- Anchoring is "best effort" (can retry later)
+- Business continuity is not IOTA-dependent
 
 ---
 
@@ -457,34 +466,34 @@ Anchors verdict to IOTA asynchronously (background task)
 
 ### Q1 2026: Current State
 
-* ✅ Merkle Tree hash anchoring
-* ✅ IOTA SDK integration
-* ✅ Off-chain validation
+- ✅ Merkle Tree hash anchoring
+- ✅ IOTA SDK integration
+- ✅ Off-chain validation
 
 ### Q2 2026: TWIN Exploration
 
-* [ ] Contact IOTA Foundation re: TWIN API access
-* [ ] Prototype identity verification integration
-* [ ] Feature flag: `VITE_ENABLE_TWIN_INTEGRATION`
+- [ ] Contact IOTA Foundation re: TWIN API access
+- [ ] Prototype identity verification integration
+- [ ] Feature flag: `VITE_ENABLE_TWIN_INTEGRATION`
 
 ### Q3 2026: Move Smart Contracts (Phase 2)
 
-* [ ] Learn Move language
-* [ ] Develop `ComplianceRegistry` module
-* [ ] Testnet deployment
-* [ ] Security audit
+- [ ] Learn Move language
+- [ ] Develop `ComplianceRegistry` module
+- [ ] Testnet deployment
+- [ ] Security audit
 
 ### Q4 2026: ADAPT Pilot
 
-* [ ] Partner with ADAPT for AfCFTA use case
-* [ ] Deploy on IOTA Mainnet
-* [ ] Integrate with TWIN (if available)
+- [ ] Partner with ADAPT for AfCFTA use case
+- [ ] Deploy on IOTA Mainnet
+- [ ] Integrate with TWIN (if available)
 
 ### 2027+: Decentralized Validation (Phase 3)
 
-* [ ] Economic modeling (tokenomics)
-* [ ] Validator network design
-* [ ] Community governance
+- [ ] Economic modeling (tokenomics)
+- [ ] Validator network design
+- [ ] Community governance
 
 ---
 
@@ -512,21 +521,21 @@ Anchors verdict to IOTA asynchronously (background task)
 
 **Near-Term (Q1-Q2 2026):**
 
-* [ ] 100% of consignments successfully anchored to IOTA
-* [ ] <2s average anchoring time
-* [ ] Zero anchoring failures (with retries)
+- [ ] 100% of consignments successfully anchored to IOTA
+- [ ] <2s average anchoring time
+- [ ] Zero anchoring failures (with retries)
 
 **Mid-Term (Q3-Q4 2026):**
 
-* [ ] TWIN integration live (if available)
-* [ ] Move smart contract deployed to Mainnet
-* [ ] 1,000+ on-chain compliance verdicts
+- [ ] TWIN integration live (if available)
+- [ ] Move smart contract deployed to Mainnet
+- [ ] 1,000+ on-chain compliance verdicts
 
 **Long-Term (2027+):**
 
-* [ ] Decentralized validator network with 10+ independent nodes
-* [ ] Zero downtime for compliance validation
-* [ ] ADAPT partnership with 100+ African SMEs using VeriPura
+- [ ] Decentralized validator network with 10+ independent nodes
+- [ ] Zero downtime for compliance validation
+- [ ] ADAPT partnership with 100+ African SMEs using VeriPura
 
 ---
 
@@ -541,8 +550,8 @@ Anchors verdict to IOTA asynchronously (background task)
 
 **Decision Required:**
 
-* Should we commit to Phase 2 (Move smart contracts) in Q3 2026?
-* What is the minimum TWIN integration to prove concept?
+- Should we commit to Phase 2 (Move smart contracts) in Q3 2026?
+- What is the minimum TWIN integration to prove concept?
 
 ---
 

@@ -16,6 +16,12 @@
       "extensionInstances": {
         "firestore-bigquery-export": "79ff9dafadfac7253ce096de16e43105fec58131159f9d603d30f666f07d0899"
       }
+    },
+    "veripura-f92a5": {
+      "extensionInstances": {
+        "firestore-bigquery-export": "2b473a32b40310815684ab08b1d00db7d4de948b7379d7c31c58a36cd81564c9",
+        "firestore-send-email": "180d452aab024cbed2858cf63c56290d23565e2a8718f4df6f89dcce8a802e55"
+      }
     }
   }
 }

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { iotaService } from '../services/iotaService';
-import { 
-  Link2, 
-  FileText, 
-  Shield, 
-  Clock, 
-  ExternalLink, 
-  ChevronDown, 
+import {
+  Link2,
+  FileText,
+  Shield,
+  Clock,
+  ExternalLink,
+  ChevronDown,
   ChevronRight,
   Hash,
   ArrowRightLeft,
@@ -26,6 +26,7 @@ export interface IOTATransaction {
   description: string;
   status: 'confirmed' | 'pending' | 'failed';
   cost?: string;
+  amount?: number;
   sender?: string;
   recipients?: string[];
   timestampISO?: string;
@@ -37,9 +38,9 @@ interface TransactionHistoryProps {
   showDetails?: boolean;
 }
 
-const IOTATransactionHistory: React.FC<TransactionHistoryProps> = ({ 
+const IOTATransactionHistory: React.FC<TransactionHistoryProps> = ({
   maxItems = 20,
-  showDetails = true 
+  showDetails = true
 }) => {
   const { currentUser, userProfile } = useAuth();
   const [transactions, setTransactions] = useState<IOTATransaction[]>([]);
@@ -79,23 +80,23 @@ const IOTATransactionHistory: React.FC<TransactionHistoryProps> = ({
 
       // 2. Fetch REAL transaction history from IOTA
       const realTransactions = await iotaService.getTransactionHistory(address, maxItems);
-      
+
       console.log('[IOTA History] Real transactions:', realTransactions);
 
       // Transform real IOTA transactions to our format
       for (const tx of realTransactions) {
         const isSender = tx.sender?.toLowerCase() === address.toLowerCase();
-        
+
         // Determine transaction type based on object changes
         let txType: IOTATransaction['type'] = 'token_transfer';
         let description = 'Token Transfer';
-        
+
         // Analyze object changes to determine transaction type
         if (tx.objectChanges && tx.objectChanges.length > 0) {
-          const hasConsignment = tx.objectChanges.some((c: any) => 
+          const hasConsignment = tx.objectChanges.some((c: any) =>
             c.objectType?.includes('Consignment')
           );
-          
+
           if (hasConsignment) {
             txType = 'consignment';
             description = 'Consignment Registered';
@@ -104,7 +105,7 @@ const IOTATransactionHistory: React.FC<TransactionHistoryProps> = ({
             const createdTypes = tx.objectChanges
               .filter((c: any) => c.type === 'created')
               .map((c: any) => c.objectType);
-            
+
             if (createdTypes.some((t: string) => t?.includes('Consignment'))) {
               txType = 'consignment';
               description = 'Consignment Created';
@@ -122,6 +123,7 @@ const IOTATransactionHistory: React.FC<TransactionHistoryProps> = ({
           status: 'confirmed',
           sender: tx.sender,
           recipients: tx.recipients,
+          amount: tx.amount, // Real amount from service
           timestampISO: tx.timestampISO,
           metadata: {
             objectChanges: tx.objectChanges,
@@ -154,7 +156,7 @@ const IOTATransactionHistory: React.FC<TransactionHistoryProps> = ({
 
     // Sort by timestamp (newest first)
     txHistory.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    
+
     setTransactions(txHistory.slice(0, maxItems));
     setLoading(false);
   };
@@ -198,7 +200,7 @@ const IOTATransactionHistory: React.FC<TransactionHistoryProps> = ({
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
-    
+
     if (diff < 60000) return 'Just now';
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
@@ -242,28 +244,35 @@ const IOTATransactionHistory: React.FC<TransactionHistoryProps> = ({
           {transactions.map((tx) => (
             <div key={tx.id} className="hover:bg-slate-50 transition-colors">
               {/* Main Row */}
-              <div 
+              <div
                 className="px-4 py-3 flex items-center gap-3 cursor-pointer"
                 onClick={() => showDetails && setExpandedTx(expandedTx === tx.id ? null : tx.id)}
               >
                 <div className="p-2 bg-slate-100 rounded-lg">
                   {getTransactionIcon(tx.type)}
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-slate-800 text-sm">
-                      {tx.description}
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      tx.status === 'confirmed' 
-                        ? 'bg-green-100 text-green-700' 
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-slate-800 text-sm">
+                        {tx.description}
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${tx.status === 'confirmed'
+                        ? 'bg-green-100 text-green-700'
                         : tx.status === 'pending'
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {tx.status}
-                    </span>
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-red-100 text-red-700'
+                        }`}>
+                        {tx.status}
+                      </span>
+                    </div>
+
+                    {tx.amount !== undefined && tx.amount !== 0 && (
+                      <span className={`text-sm font-semibold ${tx.amount > 0 ? 'text-emerald-600' : 'text-slate-600'}`}>
+                        {tx.amount > 0 ? '+' : ''}{(tx.amount / 1000000000).toFixed(4)} IOTA
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
                     <span>{getTypeLabel(tx.type)}</span>
@@ -296,7 +305,7 @@ const IOTATransactionHistory: React.FC<TransactionHistoryProps> = ({
                         </div>
                       </div>
                     )}
-                    
+
                     {tx.sender && (
                       <div className="flex items-start gap-2">
                         <ArrowRightLeft className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
@@ -320,7 +329,7 @@ const IOTATransactionHistory: React.FC<TransactionHistoryProps> = ({
                         </div>
                       </div>
                     )}
-                    
+
                     {tx.explorerUrl && (
                       <a
                         href={tx.explorerUrl}
@@ -339,12 +348,11 @@ const IOTATransactionHistory: React.FC<TransactionHistoryProps> = ({
                         <div className="mt-1 space-y-1">
                           {tx.metadata.objectChanges.slice(0, 5).map((change: any, idx: number) => (
                             <div key={idx} className="flex items-center gap-2 text-xs">
-                              <span className={`px-1.5 py-0.5 rounded ${
-                                change.type === 'created' ? 'bg-green-100 text-green-700' :
+                              <span className={`px-1.5 py-0.5 rounded ${change.type === 'created' ? 'bg-green-100 text-green-700' :
                                 change.type === 'modified' ? 'bg-blue-100 text-blue-700' :
-                                change.type === 'transferred' ? 'bg-purple-100 text-purple-700' :
-                                'bg-slate-100 text-slate-700'
-                              }`}>
+                                  change.type === 'transferred' ? 'bg-purple-100 text-purple-700' :
+                                    'bg-slate-100 text-slate-700'
+                                }`}>
                                 {change.type}
                               </span>
                               <span className="text-slate-600 font-mono truncate">

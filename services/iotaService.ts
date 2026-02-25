@@ -17,7 +17,7 @@ class IotaService {
     this.client = new IotaClient({
       url: (import.meta.env && import.meta.env.VITE_IOTA_NODE_URL) || 'https://api.testnet.iota.cafe',
     });
-    
+
     console.log('╔════════════════════════════════════════════════════════════╗');
     console.log('║ [IOTA Service] Initialized                                ║');
     console.log('║ Node URL:', (import.meta.env && import.meta.env.VITE_IOTA_NODE_URL) || 'https://api.testnet.iota.cafe');
@@ -100,7 +100,7 @@ class IotaService {
       console.log(`[IOTA] Checking balance for: ${address}`);
       const balance = await this.client.getBalance({ owner: address });
       const bal = parseInt(balance.totalBalance);
-      console.log(`[IOTA] Balance: ${bal} raw (${bal / 1_000_000} IOTA)`);
+      console.log(`[IOTA] Balance: ${bal} raw (${bal / 1_000_000_000} IOTA)`);
       return bal;
     } catch (error) {
       console.error('[IOTA] Failed to fetch balance:', error);
@@ -118,39 +118,58 @@ class IotaService {
     timestampISO: string;
     sender: string;
     recipients: string[];
-    amount: number;
+    amount: number; // Net balance change in NanoIOTA
     objectChanges: any[];
   }[]> {
     try {
-      console.log(`[IOTA] Fetching transaction history for: ${address}`);
-      
-      // Query transaction blocks for this address using correct filter format
-      const response = await this.client.queryTransactionBlocks({
-        filter: {
-          FromAddress: address,
-        },
-        limit,
-        options: {
-          showEffects: true,
-          showEvents: true,
-        }
-      });
+      console.log(`[IOTA] Fetching comprehensive transaction history for: ${address}`);
 
-      console.log(`[IOTA] Found ${response.data.length} transactions`);
+      // We fetch both transactions FROM this address and TO this address
+      const [outgoing, incoming] = await Promise.all([
+        this.client.queryTransactionBlocks({
+          filter: { FromAddress: address },
+          limit: Math.floor(limit / 2),
+          options: { showEffects: true, showEvents: true, showBalanceChanges: true }
+        }),
+        this.client.queryTransactionBlocks({
+          filter: { ToAddress: address },
+          limit: Math.floor(limit / 2),
+          options: { showEffects: true, showEvents: true, showBalanceChanges: true }
+        })
+      ]);
 
-      return response.data.map(tx => {
-        // Determine sender from the transaction
+      const merged = [...outgoing.data, ...incoming.data];
+      // Filter out duplicates and sort by timestamp
+      const uniqueTx = Array.from(new Map(merged.map(tx => [tx.digest, tx])).values())
+        .sort((a, b) => Number(b.timestampMs || 0) - Number(a.timestampMs || 0))
+        .slice(0, limit);
+
+      console.log(`[IOTA] Found ${uniqueTx.length} combined transactions`);
+
+      return uniqueTx.map(tx => {
         const sender = (tx.transaction as any)?.sender || '';
-        
-        // Extract recipients from effects (transfers)
         const recipients: string[] = [];
-        let amount = 0;
+        let netAmount = 0;
 
-        if ((tx.effects as any)?.objectChanges) {
+        // Extract recipients and calculate net amount for the requested address
+        if (tx.balanceChanges) {
+          tx.balanceChanges.forEach((bc: any) => {
+            const owner = typeof bc.owner === 'object' ? bc.owner?.AddressOwner : bc.owner;
+            if (owner === address) {
+              netAmount += Number(bc.amount || 0);
+            } else if (owner && owner !== sender) {
+              recipients.push(owner);
+            }
+          });
+        }
+
+        // Fallback for recipients
+        if (recipients.length === 0 && (tx.effects as any)?.objectChanges) {
           (tx.effects as any).objectChanges.forEach((change: any) => {
             if (change.type === 'transferred') {
-              if (change.recipient && change.recipient !== sender) {
-                recipients.push(change.recipient);
+              const recipient = typeof change.recipient === 'object' ? change.recipient?.AddressOwner : change.recipient;
+              if (recipient && recipient !== sender) {
+                recipients.push(recipient);
               }
             }
           });
@@ -161,8 +180,8 @@ class IotaService {
           timestamp: Number(tx.timestampMs) || 0,
           timestampISO: tx.timestampMs ? new Date(Number(tx.timestampMs)).toISOString() : new Date().toISOString(),
           sender,
-          recipients: [...new Set(recipients)], // Remove duplicates
-          amount,
+          recipients: [...new Set(recipients)],
+          amount: netAmount,
           objectChanges: (tx.effects as any)?.objectChanges || []
         };
       });
@@ -449,7 +468,7 @@ class IotaService {
       console.log('╔════════════════════════════════════════════════════════════╗');
       console.log('║ [IOTA] Creating Supply Contract                         ║');
       console.log('╚════════════════════════════════════════════════════════════╝');
-      
+
       // Handle keypair
       let keypair: Ed25519Keypair;
       if (signerPrivateKey.startsWith('iotaprivkey')) {

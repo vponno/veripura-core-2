@@ -1,0 +1,52 @@
+[
+  {
+    "id": "evfta",
+    "name": "EVFTA (EU-Vietnam Free Trade Agreement)",
+    "origin": ["Vietnam"],
+    "destination": ["EU", "Germany", "France", "Netherlands", "Italy", "Spain", "Poland", "Belgium", "Austria", "Sweden"],
+    "baseRate": 0.12,
+    "preferentialRate": 0.0,
+    "requirement": "EUR.1 Movement Certificate",
+    "status": "Active"
+  },
+  {
+    "id": "gsp-brazil-eu",
+    "name": "GSP (Generalised Scheme of Preferences)",
+    "origin": ["Brazil"],
+    "destination": ["EU"],
+    "baseRate": 0.14,
+    "preferentialRate": 0.08,
+    "requirement": "Form A or REX Statement",
+    "status": "Active"
+  },
+  {
+    "id": "usmca",
+    "name": "USMCA (United States-Mexico-Canada Agreement)",
+    "origin": ["Mexico", "Canada"],
+    "destination": ["United States"],
+    "baseRate": 0.05,
+    "preferentialRate": 0.0,
+    "requirement": "Certificate of Origin",
+    "status": "Active"
+  },
+  {
+    "id": "rcep",
+    "name": "RCEP (Regional Comprehensive Economic Partnership)",
+    "origin": ["China", "Japan", "South Korea", "Australia", "New Zealand", "Thailand", "Vietnam", "Indonesia", "Malaysia", "Philippines", "Singapore"],
+    "destination": ["China", "Japan", "South Korea", "Australia", "New Zealand", "Thailand", "Vietnam", "Indonesia", "Malaysia", "Philippines", "Singapore"],
+    "baseRate": 0.08,
+    "preferentialRate": 0.0,
+    "requirement": "RCEP Certificate of Origin",
+    "status": "Active"
+  },
+  {
+    "id": "aeu",
+    "name": "AEU (ASEAN-EU Trade Agreement)",
+    "origin": ["Thailand", "Vietnam", "Indonesia", "Malaysia", "Singapore", "Philippines"],
+    "destination": ["EU"],
+    "baseRate": 0.10,
+    "preferentialRate": 0.05,
+    "requirement": "Form A",
+    "status": "Negotiating"
+  }
+]

@@ -61,8 +61,8 @@ const VALIDATION_SCHEMA: Schema = {
         date: { type: Type.STRING, description: "Document date" },
 
         // Parties
-        issuer: { type: Type.STRING, description: "Name of the seller/exporter" },
-        recipient: { type: Type.STRING, description: "Name of the buyer/importer" },
+        sellerName: { type: Type.STRING, description: "Name of the seller/exporter" },
+        buyerName: { type: Type.STRING, description: "Name of the buyer/importer" },
 
         // Summary
         summary: { type: Type.STRING, description: "Brief 2-sentence summary of the document" },
@@ -199,8 +199,10 @@ const VALIDATION_SCHEMA: Schema = {
 const DNA_SCHEMA: Schema = {
     type: Type.OBJECT,
     properties: {
-        originCountry: { type: Type.STRING },
-        destinationCountry: { type: Type.STRING },
+        originCountry: { type: Type.STRING, description: "Full name of origin country" },
+        destinationCountry: { type: Type.STRING, description: "Full name of destination country" },
+        sellerName: { type: Type.STRING, description: "Full legal name of the exporter/seller" },
+        buyerName: { type: Type.STRING, description: "Full legal name of the importer/buyer" },
         products: {
             type: Type.ARRAY,
             items: {
@@ -233,7 +235,7 @@ const DNA_SCHEMA: Schema = {
             required: ['isSuspicious', 'tamperScore', 'handwrittenModifications']
         }
     },
-    required: ['originCountry', 'destinationCountry', 'products', 'securityAnalysis']
+    required: ['originCountry', 'destinationCountry', 'sellerName', 'buyerName', 'products', 'securityAnalysis']
 };
 
 // --- Engine Implementations ---
@@ -254,8 +256,8 @@ export class GeminiV3Engine implements AnalysisEngine {
         const prompt = `You are VeriPura™ AI, an expert in international food trade compliance and document forensics.
             
 TRADE ROUTE CONTEXT:
-- Origin Country: ${context?.exportFrom || 'Unknown'} (Full Name, e.g. "Switzerland" not "CH")
-- Destination Country: ${context?.importTo || 'Unknown'} (Full Name, e.g. "China" not "CN")
+- Origin Country: ${context?.exportFrom || 'Unknown'} (Full Country Name)
+- Destination Country: ${context?.importTo || 'Unknown'} (Full Country Name)
 - Current Date: ${today}
 
 Analyze the provided document and perform these comprehensive tasks:
@@ -334,13 +336,15 @@ Assign overall validationLevel:
 
     async extractTradeDna(file: File): Promise<any> {
         const base64Data = await fileToBase64(file);
-        const prompt = `You are the VeriPura Oracle. Analyze this Purchase Order or Invoice.
+        const prompt = `You are the VeriPura Oracle, a specialist in international trade document forensic analysis. Analyze this Purchase Order or Invoice.
         
         PART 1: DATA EXTRACTION ("The DNA")
-        Extract:
-        1. Origin Country (Exporter's location) - ALWAYS use Full Country Name (e.g. "Switzerland", never "CH")
-        2. Destination Country (Importer's location) - ALWAYS use Full Country Name (e.g. "China", never "CN")
-        3. For each line item:
+        Extract exactly what is written in the document:
+        1. Origin Country (Exporter's location) - Find the country of the seller/shipper. Use Full Country Name.
+        2. Destination Country (Importer's location) - Find the country of the buyer/consignee. Use Full Country Name.
+        3. Seller Name - The full legal name of the exporter/shipper.
+        4. Buyer Name - The full legal name of the importer/consignee.
+        5. For each line item:
            - Predict the 6-digit HS Code (e.g. '030617').
            - Detect key Attributes (e.g. 'Frozen', 'Organic').
 

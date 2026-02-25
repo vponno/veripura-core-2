@@ -11,6 +11,21 @@ import { db } from './lib/firebase';
 import { AgentAlert, RLHFReviewCase } from '../types';
 import { logger } from './lib/logger';
 
+// Helper: Remove undefined values for Firestore compatibility
+const removeUndefined = (obj: any): any => {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(item => removeUndefined(item));
+    
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined) {
+            cleaned[key] = removeUndefined(value);
+        }
+    }
+    return cleaned;
+};
+
 export const rlhfService = {
 
     /**
@@ -44,12 +59,12 @@ export const rlhfService = {
                 docType,
                 reason: alert.message,
                 details: alert.suggestedAction || 'No suggested action.',
-                aiAnalysis: analysisDraft,
+                aiAnalysis: removeUndefined(analysisDraft),
                 aiConfidence: alert.confidence || 0.5,
                 severity: alert.severity === 'critical' ? 'critical' : 'warning',
                 status: 'pending',
                 createdAt: new Date().toISOString(),
-                fileUrl
+                ...(fileUrl ? { fileUrl } : { fileUrl: null })  // Use null instead of undefined
             };
 
             const docRef = await addDoc(collection(db, 'review_queue'), newCase);

@@ -65,8 +65,8 @@ const Dashboard: React.FC = () => {
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
-                <Loader2 className="animate-spin text-primary" size={32} />
-                <span className="ml-2 text-slate-500">Loading Dashboard...</span>
+                <Loader2 className="animate-spin text-blue-600 dark:text-blue-400" size={32} />
+                <span className="ml-2 text-slate-500 dark:text-slate-400">Loading Dashboard...</span>
             </div>
         );
     }
@@ -75,8 +75,8 @@ const Dashboard: React.FC = () => {
         <div className="max-w-6xl mx-auto space-y-8">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-                    <p className="text-slate-500">Overview of your supply chain operations.</p>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
+                    <p className="text-slate-500 dark:text-slate-400">Overview of your supply chain operations.</p>
                 </div>
                 <button
                     onClick={() => navigate('/register-consignment')}
@@ -112,7 +112,7 @@ const Dashboard: React.FC = () => {
             {/* Main Content - Ongoing Consignments */}
             <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-bold text-slate-900">Ongoing Consignments</h2>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Ongoing Consignments</h2>
                     <button
                         onClick={() => navigate('/consignments')}
                         className="text-sm text-primary hover:underline font-medium"
@@ -122,10 +122,10 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {consignments.length === 0 ? (
-                    <div className="text-center py-12 bg-white rounded-xl border border-dashed border-slate-200">
+                    <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
                         <Package className="mx-auto h-12 w-12 text-slate-400 mb-3" />
-                        <h3 className="text-lg font-medium text-slate-900">No active consignments</h3>
-                        <p className="text-slate-500">Start by creating a new consignment.</p>
+                        <h3 className="text-lg font-medium text-slate-900 dark:text-white">No active consignments</h3>
+                        <p className="text-slate-500 dark:text-slate-400">Start by creating a new consignment.</p>
                     </div>
                 ) : (
                     <div className="space-y-3">

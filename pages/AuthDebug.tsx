@@ -8,10 +8,7 @@ import DIDManagement from '../components/DIDManagement';
 import IOTATransactionHistory from '../components/IOTATransactionHistory';
 
 const WalletProfile: React.FC = () => {
-    const { currentUser, logout, error } = useAuth();
-    const [iotaAddress, setIotaAddress] = useState<string | null>(null);
-    const [balance, setBalance] = useState<number | null>(null);
-    const [loadingBalance, setLoadingBalance] = useState(false);
+    const { currentUser, userProfile, logout, error, balance, refreshBalance } = useAuth();
     const [requestingTokens, setRequestingTokens] = useState(false);
     const [showPrivateKey, setShowPrivateKey] = useState(false);
 
@@ -19,33 +16,7 @@ const WalletProfile: React.FC = () => {
     const [showImportInput, setShowImportInput] = useState(false);
     const [importStatus, setImportStatus] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchUserData = async () => {
-            if (currentUser) {
-                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-                if (userDoc.exists()) {
-                    const address = userDoc.data().iotaAddress;
-                    setIotaAddress(address);
-                    if (address) {
-                        fetchBalance(address);
-                    }
-                }
-            }
-        };
-        fetchUserData();
-    }, [currentUser]);
-
-    const fetchBalance = async (address: string) => {
-        setLoadingBalance(true);
-        try {
-            const bal = await iotaService.getAddressBalance(address);
-            setBalance(bal);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoadingBalance(false);
-        }
-    };
+    const iotaAddress = userProfile?.iotaAddress || null;
 
     const handleCopyAddress = () => {
         if (iotaAddress) {
@@ -60,7 +31,7 @@ const WalletProfile: React.FC = () => {
         try {
             await iotaService.requestTokens(iotaAddress);
             alert("Tokens requested! It may take a few seconds to reflect.");
-            setTimeout(() => fetchBalance(iotaAddress), 3000); // Poll after 3s
+            setTimeout(() => refreshBalance(), 3000); // Poll after 3s
         } catch (e: any) {
             alert("Faucet request failed: " + e.message);
         } finally {
@@ -81,7 +52,7 @@ const WalletProfile: React.FC = () => {
                     <User size={24} />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">Wallet & Identity</h1>
                     <p className="text-slate-500">Manage your identity and digital wallet.</p>
                 </div>
             </div>
@@ -130,7 +101,7 @@ const WalletProfile: React.FC = () => {
                         </div>
                         <div>
                             <h3 className="text-4xl font-bold font-mono">
-                                {loadingBalance ? '...' : (balance ? (balance / 1000000000).toFixed(2) : '0.00')}
+                                {balance === null ? '...' : (balance / 1000000000).toFixed(6)}
                                 <span className="text-lg text-slate-400 ml-2">IOTA</span>
                             </h3>
                             <p className="text-slate-400 text-sm mt-1">Available Balance</p>

@@ -1,15 +1,14 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { DocumentAnalysisProvider, AnalysisOptions, AnalysisResult } from '../types';
 import { ChecklistItemStatus } from '../../../../types';
-
-// ... (existing code)
+import { buildCompliancePrompt } from '../prompts';
 
 // Hydrate fields - REMOVED to allow AI auto-detection
 // parsed.extractedData.originCountry = fromCountry;
 // parsed.extractedData.destinationCountry = toCountry;
 
 // Robust API Key Retrieval
-const getApiKey = () => {
+const getApiKey = (): string => {
     if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_GEMINI_API_KEY) {
         return (import.meta as any).env.VITE_GEMINI_API_KEY;
     }
@@ -105,43 +104,7 @@ export class GeminiProvider implements DocumentAnalysisProvider {
     async analyze(fileBase64: string, mimeType: string, options: AnalysisOptions): Promise<AnalysisResult> {
         const { fromCountry, toCountry } = options;
 
-        const prompt = `
-    You are the Senior Trade Compliance Officer for **${toCountry}**.
-    
-    You are enforcing the specific Import Regulations of **${toCountry}**.
-    If the destination is an EU Member State (e.g., France, Germany, Netherlands), you MUST cite the **National Competent Authority** (e.g., ANSES for France, NVWA for Netherlands, BVL for Germany) and National rules.
-
-    Analyze the provided document (Purchase Order) for a shipment from ${fromCountry} to ${toCountry}.
-
-    1. **Forensics**: Check for tampering/AI generation.
-    2. **Extraction**: Identify Seller, Buyer, Products (with HS Codes).
-    3. **Attributes**: For each product, extract attributes if they appear in description or are implied: "Frozen", "Fresh/Chilled", "Dried", "Roasted", "Organic", "Fairtrade", "Halal", "Kosher", "Wild Caught", "Aquaculture", "Ready-to-Eat".
-    4. **Compliance Checklist**:
-       Generate a document list split by **MANDATORY** (Strict legal requirement for entry) vs **ADVISED** (Recommended, best practice, or conditional commercial requirement).
-       
-       **CATEGORIZATION RULES**:
-       - **Logistics**: Bill of Lading, Packing List.
-       - **Financial**: Commercial Invoice.
-       - **Customs**: Import Declaration (CBP 7501, SAD), Valuation Form.
-       - **Regulatory**: Health Certificate, Phytosanitary Certificate.
-       - **Certifications**: Organic Cert, Halal Cert, Catch Cert.
-
-       **LOGIC FOR MANDATORY vs ADVISED**:
-       - Core Customs/Logistics docs (Invoice, PL, BL, Import Declaration) are **ALWAYS MANDATORY**.
-       - **Organic Certificate**: MANDATORY if product is Organic AND destination has organic law.
-       - **Phytosanitary/Health Cert**: MANDATORY if product is plant/animal.
-       - **Halal/Kosher**: MANDATORY for specific destinations (e.g. UAE/Saudi Arabia for Halal), otherwise **ADVISED** if product claims to be Halal/Kosher.
-       - **Quality/Test Reports**: Usually **ADVISED** unless specific safety regulation cites it.
-       - **Origin Cert**: MANDATORY for Preferential Tariffs, otherwise ADVISED.
-
-       For each document:
-       - **documentName**: Official legal name.
-       - **issuingAgency**: Specific national agency.
-       - **agencyLink**: Official URL.
-       - **isMandatory**: BOOLEAN (true/false).
-
-    Your response must be a single JSON object matching the schema.
-    `;
+        const prompt = buildCompliancePrompt(fromCountry, toCountry);
 
         try {
             const response = await this.ai.models.generateContent({

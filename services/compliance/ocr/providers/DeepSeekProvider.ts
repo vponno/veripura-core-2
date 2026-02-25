@@ -1,5 +1,6 @@
 import { AnalysisOptions, AnalysisResult } from '../types';
 import { BaseProvider } from './BaseProvider';
+import { buildCompliancePrompt, PROVIDER_PROMPTS } from '../prompts';
 
 /**
  * DeepSeek Provider - Excellent for Asian languages
@@ -38,14 +39,8 @@ export class DeepSeekProvider extends BaseProvider {
     }
     
     private buildPrompt(options: AnalysisOptions): string {
-        return `You are VeriPura AI, an expert in international trade compliance.
-        
-Analyze this document and extract:
-1. Document Type
-2. Products with HS Codes
-3. Origin & Destination countries
-4. Security analysis (tampering, authenticity)
-5. Required compliance documents for ${options.fromCountry} -> ${options.toCountry}
+        const basePrompt = buildCompliancePrompt(options.fromCountry, options.toCountry, PROVIDER_PROMPTS.deepseek);
+        return `${basePrompt}
 
 Return JSON with this structure:
 {

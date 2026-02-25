@@ -8,6 +8,15 @@ module veripura::supply_chain {
     use std::option::{Self, Option};
 
     /// Struct representing the Export Consignment (Lean Storage)
+    struct Consignment has key, store {
+        id: UID,
+        owner: address,
+        internal_id: String,
+        data_hash: vector<u8>,
+        status: String, // PENDING_INSPECTION, VALIDATED, DEPARTED, ARRIVED
+        timestamp: u64,
+    }
+
     use iota::coin::{Self, Coin};
     use iota::balance::{Self, Balance};
 

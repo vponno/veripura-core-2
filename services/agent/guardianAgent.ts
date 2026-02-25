@@ -213,9 +213,14 @@ export class GuardianAgent {
 
                     // Aggregate required documents from sub-agents
                     if (subResult.requiredDocuments && subResult.requiredDocuments.length > 0) {
+                        // Tag each document with the source sub-agent
+                        const taggedDocs = subResult.requiredDocuments.map(doc => ({
+                            ...doc,
+                            source: agent.name
+                        }));
                         result.requiredDocuments = [
                             ...(result.requiredDocuments || []),
-                            ...subResult.requiredDocuments
+                            ...taggedDocs
                         ];
                     }
 

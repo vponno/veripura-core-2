@@ -227,6 +227,7 @@ export interface RequiredDocument {
     agency?: string;
     agencyLink?: string;
     reason?: string;
+    source?: string; // Which sub-agent requested this document
 }
 
 export interface AgentEventResult {

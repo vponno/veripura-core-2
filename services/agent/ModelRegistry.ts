@@ -11,12 +11,15 @@ export class ModelRegistry {
 
     private constructor() {
         // Register default "Expert" models
-        // In a real app, these might be loaded from a config file or env vars
-        this.register('default', { provider: 'vertex', modelId: 'gemini-2.5-flash' });
-        this.register('vision-pro', { provider: 'huggingface', modelId: 'Qwen/Qwen2.5-VL-72B-Instruct' });
-        this.register('vision-fast', { provider: 'vertex', modelId: 'gemini-2.5-flash' }); // Good fallback
+        // Can be overridden via environment variables
+        const defaultModel = import.meta.env.VITE_DEFAULT_MODEL || 'gemini-2.5-flash';
+        const visionModel = import.meta.env.VITE_VISION_MODEL || 'Qwen/Qwen2.5-VL-72B-Instruct';
+        
+        this.register('default', { provider: 'vertex', modelId: defaultModel });
+        this.register('vision-pro', { provider: 'huggingface', modelId: visionModel });
+        this.register('vision-fast', { provider: 'vertex', modelId: defaultModel });
         this.register('legal-expert', { provider: 'huggingface', modelId: 'nlpaueb/legal-bert-base-uncased' });
-        this.register('doc-parser', { provider: 'huggingface', modelId: 'ibm/docling' }); // Evaluation mode
+        this.register('doc-parser', { provider: 'huggingface', modelId: 'ibm/docling' });
     }
 
     public static getInstance(): ModelRegistry {

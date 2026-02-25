@@ -93,10 +93,33 @@ export const poService = {
 
         const flagged = orchestratorResult.alerts?.some(a => a.severity === 'critical' || a.severity === 'warning');
 
+        // Sanitize roadmap keys to ensure they're strings (Firestore requirement)
+        const sanitizeRoadmap = (roadmap: any): any => {
+            if (!roadmap || typeof roadmap !== 'object') return roadmap;
+            const sanitized: any = {};
+            for (const [key, value] of Object.entries(roadmap)) {
+                // Skip invalid keys
+                if (typeof key !== 'string' || key === '[object Object]' || !key.trim()) {
+                    console.warn('[POService] Skipping invalid roadmap key:', key);
+                    continue;
+                }
+                const safeKey = String(key)
+                    .replace(/^[.]+/, '')  // Remove leading dots
+                    .replace(/[~*\/\[\\\]]/g, '_')  // Replace invalid chars
+                    .trim();
+                if (safeKey) {
+                    sanitized[safeKey] = value;
+                }
+            }
+            return sanitized;
+        };
+
+        const sanitizedRoadmapUpdates = sanitizeRoadmap(orchestratorResult.roadmapUpdates);
+
         const roadmapUpdates = {
-            ...orchestratorResult.roadmapUpdates,
+            ...sanitizedRoadmapUpdates,
             'Purchase Order': {
-                ...orchestratorResult.roadmapUpdates?.['Purchase Order'],
+                ...sanitizedRoadmapUpdates?.['Purchase Order'],
                 fileUrl,
                 fileIv: ivStr,
                 documentHash,

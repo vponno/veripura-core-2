@@ -1,6 +1,6 @@
 
 import { ISkill, SkillCategory, SkillContext, SkillResult } from '../../types';
-import { functions } from '../../lib/firebase';
+import { functions } from '../../../lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 
 const fileToBase64 = (file: File): Promise<string> => {
@@ -67,6 +67,7 @@ export class DocumentGuardSkill implements ISkill {
             // 4. Construct "Truth" (Consignment Data)
             const truth = {
                 origin: metadata.shipment?.origin,
+                destination: metadata.shipment?.destination,
                 product: metadata.shipment?.product,
             };
 
@@ -75,6 +76,9 @@ export class DocumentGuardSkill implements ISkill {
 
             if (truth.origin && !parsedText.toLowerCase().includes(truth.origin.toLowerCase())) {
                 issues.push(`Origin Mismatch: Document does not mention ${truth.origin}`);
+            }
+            if (truth.destination && !parsedText.toLowerCase().includes(truth.destination.toLowerCase())) {
+                issues.push(`Destination Mismatch: Document does not mention ${truth.destination}`);
             }
             if (truth.product && !parsedText.toLowerCase().includes(truth.product.toLowerCase())) {
                 issues.push(`Product Mismatch: Document does not mention ${truth.product}`);

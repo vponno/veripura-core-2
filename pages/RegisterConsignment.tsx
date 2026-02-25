@@ -17,6 +17,7 @@ import { GuardianRequirementChat } from '../components/compliance/GuardianRequir
 import { CargoAttributesSelector } from '../components/compliance/CargoAttributesSelector';
 import { agentService } from '../services/agentService';
 import { poService } from '../services/poService';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 import {
     Package, Truck, Info, ArrowRight, Loader2, FileCheck, MapPin,
     Users, Upload, Sparkles, ShieldCheck, ShieldAlert, CheckCircle,
@@ -26,7 +27,9 @@ import {
 import { RouteChangeConfirmation } from '../components/compliance/RouteChangeConfirmation';
 import { ComplianceDashboard } from '../components/compliance/ComplianceDashboard';
 import { UnifiedDocumentList } from '../components/compliance/UnifiedDocumentList';
+import { DocumentPreviewModal } from '../components/compliance/DocumentPreviewModal';
 import { SubAgentNotifier } from '../components/compliance/SubAgentNotifier';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 interface UploadProgressStep {
     id: string;
@@ -38,7 +41,7 @@ interface UploadProgressStep {
 
 
 const RegisterConsignment: React.FC = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, refreshBalance } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -79,6 +82,24 @@ const RegisterConsignment: React.FC = () => {
     const [exportFrom, setExportFrom] = useState('');
     const [importTo, setImportTo] = useState('');
     const [manualRequirements, setManualRequirements] = useState<string[]>([]);
+
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        confirmText?: string;
+        cancelText?: string;
+        onConfirm: () => void;
+        variant?: 'danger' | 'warning' | 'info';
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        confirmText: 'Confirm',
+        cancelText: 'Cancel',
+        onConfirm: () => { }
+    });
+    const closeConfirm = () => setConfirmModal(prev => ({ ...prev, isOpen: false }));
 
     // Oracle Workflow State
     const [isChatOpen, setIsChatOpen] = useState(false);
@@ -170,6 +191,8 @@ const RegisterConsignment: React.FC = () => {
 
         if (consignmentId) {
             setLoading(true);
+
+            // Initial fetch to populate UI immediately
             consignmentService.getConsignment(consignmentId)
                 .then(data => {
                     if (data) {
@@ -180,14 +203,27 @@ const RegisterConsignment: React.FC = () => {
                         else if ((data as any).products) setOracleAnalysis({ products: (data as any).products });
                     }
                 })
-                .catch(err => console.error("Failed to load consignment", err))
+                .catch(err => console.error("Initial load failed", err))
                 .finally(() => setLoading(false));
+
+            // Real-time subscription
+            const unsubscribe = consignmentService.subscribeToConsignment(consignmentId, (data) => {
+                console.log("[RegisterConsignment] Real-time Update received");
+                setConsignment(data);
+                // Sync local uncontrolled states ONLY if they haven't been edited locally (optional optimization)
+                // For now, we sync them to ensure consistency
+                setExportFrom(data.exportFrom);
+                setImportTo(data.importTo);
+            });
+
+            return () => unsubscribe();
         }
     }, [location.search]);
 
     // Preview Modal State
     const [previewFile, setPreviewFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewMimeType, setPreviewMimeType] = useState<string | null>(null);
     const [pendingDocType, setPendingDocType] = useState<string | null>(null);
 
     // Route Confirmation State
@@ -231,33 +267,82 @@ const RegisterConsignment: React.FC = () => {
             navigate(`?id=${newConsignment.id}`, { replace: true });
         } catch (e) {
             console.error(e);
-            alert("Failed to start consignment");
+            setConfirmModal({
+                isOpen: true,
+                title: 'Operation Failed',
+                message: 'Failed to start consignment registration. Please try again.',
+                variant: 'danger',
+                onConfirm: closeConfirm
+            });
         } finally {
             setLoading(false);
         }
     };
 
+    // Helper: Remove undefined values from objects for Firestore compatibility
+    const removeUndefined = (obj: any): any => {
+        if (obj === null || obj === undefined) return obj;
+        if (typeof obj !== 'object') return obj;
+        if (Array.isArray(obj)) return obj.map(item => removeUndefined(item));
+
+        const cleaned: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+            if (value !== undefined) {
+                cleaned[key] = removeUndefined(value);
+            }
+        }
+        return cleaned;
+    };
+
     // Handlers for Document Approval/Rejection
     const handleApprove = async (docName: string, docData: any) => {
         if (!consignment) return;
-        const updatedRoadmap = { ...consignment.roadmap };
-        updatedRoadmap[docName] = {
+
+        console.log('🔍 handleApprove called:', docName, 'docData keys:', Object.keys(docData || {}));
+
+        // Defensive check: Firestore updates fail if any field is undefined.
+        const safeDocData = removeUndefined({
             ...docData,
+            category: docData.category || 'Commercial',
+            issuingAgency: docData.issuingAgency || 'Regulatory Authority',
+            required: !!docData.required,
+            isMandatory: !!docData.isMandatory,
             status: 'Validated',
             analysis: { ...docData.analysis, requiresHumanReview: false }
-        };
-        const newConsignment = { ...consignment, roadmap: updatedRoadmap };
-        setConsignment(newConsignment);
-        await consignmentService.updateConsignment(consignment.id, { roadmap: updatedRoadmap });
+        });
+
+        console.log('🔍 handleApprove safeDocData keys:', Object.keys(safeDocData || {}));
+
+        // ATOMIC UPDATE: Only update this specific roadmap item
+        await consignmentService.updateRoadmapItem(consignment.id, docName, safeDocData);
+
+        // Local update for immediate feedback
+        const updatedRoadmap = { ...consignment.roadmap, [docName]: safeDocData };
+        setConsignment({ ...consignment, roadmap: updatedRoadmap });
     };
 
     const handleReject = async (docName: string, docData: any) => {
         if (!consignment) return;
-        const updatedRoadmap = { ...consignment.roadmap };
-        updatedRoadmap[docName] = { ...docData, status: 'Rejected' };
-        const newConsignment = { ...consignment, roadmap: updatedRoadmap };
-        setConsignment(newConsignment);
-        await consignmentService.updateConsignment(consignment.id, { roadmap: updatedRoadmap });
+
+        console.log('🔍 handleReject called:', docName);
+
+        const safeDocData = removeUndefined({
+            ...docData,
+            category: docData.category || 'Commercial',
+            issuingAgency: docData.issuingAgency || 'Regulatory Authority',
+            required: !!docData.required,
+            isMandatory: !!docData.isMandatory,
+            status: 'Rejected'
+        });
+
+        console.log('🔍 handleReject safeDocData keys:', Object.keys(safeDocData || {}));
+
+        // ATOMIC UPDATE: Only update this specific roadmap item
+        await consignmentService.updateRoadmapItem(consignment.id, docName, safeDocData);
+
+        // Local update for immediate feedback
+        const updatedRoadmap = { ...consignment.roadmap, [docName]: safeDocData };
+        setConsignment({ ...consignment, roadmap: updatedRoadmap });
     };
 
     const handleFieldChange = async (field: string, value: any) => {
@@ -292,6 +377,7 @@ const RegisterConsignment: React.FC = () => {
         // Create preview URL for the file
         const url = URL.createObjectURL(file);
         setPreviewUrl(url);
+        setPreviewMimeType(file.type);
     };
 
     // Step 2: Cancel preview
@@ -299,6 +385,7 @@ const RegisterConsignment: React.FC = () => {
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         setPreviewFile(null);
         setPreviewUrl(null);
+        setPreviewMimeType(null);
         setPendingDocType(null);
     };
 
@@ -323,11 +410,52 @@ const RegisterConsignment: React.FC = () => {
             updateProgress('analyze', 'completed', 'Document analyzed successfully');
             console.log("Step 1 Complete.");
 
+            // 1b. CHECK: Is this document expected for this consignment?
+            const roadmapKeys = Object.keys(consignment.roadmap || {}).map(k => k.toLowerCase());
+            const detectedDocType = analysisResult.documentType?.toLowerCase() || docType.toLowerCase();
+            const isExpectedDoc = roadmapKeys.some(k =>
+                k.includes(detectedDocType) || detectedDocType.includes(k)
+            );
+
+            if (!isExpectedDoc) {
+                console.warn(`[Upload] Document "${analysisResult.documentType}" is NOT in the consignment roadmap. Roadmap keys:`, roadmapKeys);
+                updateProgress('analyze', 'error', `Document "${analysisResult.documentType}" is not part of this consignment`);
+
+                // Auto-reject: Document not expected for this consignment
+                const rejectData = removeUndefined({
+                    status: 'Rejected',
+                    category: analysisResult.documentType?.category || 'Unknown',
+                    analysis: {
+                        ...analysisResult,
+                        requiresHumanReview: false,
+                        rejectionReason: `Document "${analysisResult.documentType}" is not part of this consignment's compliance roadmap`,
+                        validationLevel: 'RED'
+                    }
+                });
+                await consignmentService.updateRoadmapItem(consignment.id, docType, rejectData);
+
+                await agentService.sendMessage(consignment.id,
+                    `❌ **Rejected**: The uploaded **${analysisResult.documentType}** does not match any document required for this consignment. Required documents: ${roadmapKeys.join(', ')}`,
+                    'alert');
+
+                // Refresh local state
+                const updated = await consignmentService.getConsignment(consignment.id);
+                if (updated) setConsignment(updated);
+
+                setLoading(false);
+                return;
+            }
+
+            console.log(`[Upload] Document "${analysisResult.documentType}" is expected for this consignment.`);
+
             // 2. Encrypt & Prepare Storage (Returns roadmap updates)
             updateProgress('create', 'in_progress', 'Encrypting and preparing storage...');
             console.log("Step 2: Encryption & Preparation...");
             const uploadResult = await consignmentService.uploadDocumentStep(consignment.id, docType, file, analysisResult);
             updateProgress('create', 'completed', 'Storage prepared');
+
+            // Refresh IOTA balance after anchoring
+            refreshBalance();
 
             // 3. Guardian Assessment (Returns roadmap & agentState updates)
             updateProgress('assess', 'in_progress', 'Guardian Specialists performing deep assessment...');
@@ -339,20 +467,24 @@ const RegisterConsignment: React.FC = () => {
             updateProgress('assess', 'completed', 'Specialist assessment complete');
             console.log("Step 3 Complete.");
 
-            // 4. ATOMIC UPDATE: Single write to Firestore
+            // 4. ATOMIC UPDATE: Send specific fields to avoid clobbering
             console.log("Step 4: Atomic Update to Firestore...");
-            const finalRoadmap = assessment.updates.roadmap;
-            const finalAgentState = {
+            const updates: any = {};
+
+            // Atomic roadmap update (handles dots in docType)
+            if (assessment.updates.roadmap) {
+                Object.entries(assessment.updates.roadmap).forEach(([key, value]) => {
+                    updates[`roadmap.${key}`] = value;
+                });
+            }
+
+            // Atomic agent state update
+            updates.agentState = {
                 ...assessment.updates.agentState,
-                // Ensure messages are handled separately or merged if necessary
-                // assessDocument currently doesn't add a message to state, but sendMessage does
                 unreadCount: (consignment.agentState?.unreadCount || 0) + 1
             };
 
-            await consignmentService.updateConsignment(consignment.id, {
-                roadmap: finalRoadmap,
-                agentState: finalAgentState
-            });
+            await consignmentService.updateConsignment(consignment.id, updates);
 
             // 5. Send Summary Alert (Separate for simplicity as it has its own persistence)
             const result = assessment.result;
@@ -382,8 +514,16 @@ const RegisterConsignment: React.FC = () => {
             setStatusMessage(`Error: ${errorMsg}`);
             // Keep loading true for a moment so user sees the error? 
             // Or better: use a separate error state. 
-            // For now, let's use window.alert but ensure it's processed after a slight delay to avoid race conditions with modal closing
-            setTimeout(() => alert(`Upload Failed: ${errorMsg}`), 100);
+            // For now, let's use ConfirmModal but ensure it's processed after a slight delay to avoid race conditions with modal closing
+            setTimeout(() => {
+                setConfirmModal({
+                    isOpen: true,
+                    title: 'Upload Failed',
+                    message: `Discovery and upload failed: ${errorMsg}`,
+                    variant: 'danger',
+                    onConfirm: closeConfirm
+                });
+            }, 100);
         } finally {
             setLoading(false);
             // setStatusMessage(null); // Don't clear immediately if we want to show it, but loading hides it.
@@ -399,7 +539,13 @@ const RegisterConsignment: React.FC = () => {
         if (!consignment?.encryptionKeyJwk) missingFields.push("encryption key");
 
         if (missingFields.length > 0) {
-            alert(`Cannot decrypt: Missing ${missingFields.join(", ")}. The document may still be processing or there was an upload error.`);
+            setConfirmModal({
+                isOpen: true,
+                title: 'Decryption Blocked',
+                message: `Cannot decrypt: Missing ${missingFields.join(", ")}. The document may still be processing or there was an upload error.`,
+                variant: 'warning',
+                onConfirm: closeConfirm
+            });
             console.error("Preview failed - missing data:", {
                 data,
                 consignment: { encryptionKeyJwk: !!consignment?.encryptionKeyJwk },
@@ -408,7 +554,9 @@ const RegisterConsignment: React.FC = () => {
             return;
         }
 
-        console.log(`[RegisterConsignment] Decrypting ${docType}. IV: ${data.fileIv}`);
+        console.log(`[RegisterConsignment] Decrypting ${docType} for in-app preview. IV: ${data.fileIv}`);
+        setPendingDocType(docType);
+        setLoading(true);
 
         try {
             // 1. Fetch Encrypted Blob
@@ -423,14 +571,25 @@ const RegisterConsignment: React.FC = () => {
 
             // 3. Decrypt
             const iv = EncryptionService.stringToIv(data.fileIv);
-            const decryptedBlob = await EncryptionService.decryptFile(encryptedBlob, key, iv);
+            const decryptedBlob = await EncryptionService.decryptFile(encryptedBlob, key, iv, data.fileType);
 
-            // 4. Create URL & Open
+            // 4. Create URL & Show Modal
             const url = URL.createObjectURL(decryptedBlob);
-            window.open(url, '_blank');
+            setPreviewUrl(url);
+            setPreviewMimeType(data.fileType || decryptedBlob.type);
+            // We set previewFile to null to signal this is a VIEW of an existing doc, not a new UPLOAD
+            setPreviewFile(null);
         } catch (e) {
             console.error("Decryption failed:", e);
-            alert(`Failed to decrypt document: ${e instanceof Error ? e.message : "Unknown error"}. Please try refreshing the page.`);
+            setConfirmModal({
+                isOpen: true,
+                title: 'Preview Failed',
+                message: `Failed to decrypt document: ${e instanceof Error ? e.message : "Unknown error"}. Please try refreshing the page.`,
+                variant: 'danger',
+                onConfirm: closeConfirm
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -444,19 +603,30 @@ const RegisterConsignment: React.FC = () => {
         const currentRoadmap = consignment?.roadmap || {};
         const dynamicRoadmap: any = { ...currentRoadmap };
 
+        // Sanitize AI document names to prevent Firestore field path errors
+        // Keys cannot contain: ~ * / [ ] \ and cannot start with .
+        const sanitizeDocName = (name: string): string => {
+            return String(name)
+                .replace(/^[.]+/, '') // Remove leading dots
+                .replace(/[~*\/\[\\\]]/g, '_') // Replace invalid chars with underscore
+                .trim();
+        };
+
         aiDocs.forEach(d => {
-            if (dynamicRoadmap[d.name]) {
+            const safeName = sanitizeDocName(d.name);
+
+            if (dynamicRoadmap[safeName]) {
                 // Preserve existing upload data, just update meta if needed
-                dynamicRoadmap[d.name] = {
-                    ...dynamicRoadmap[d.name],
-                    description: d.description || dynamicRoadmap[d.name].description,
-                    category: d.category || dynamicRoadmap[d.name].category,
-                    issuingAgency: d.issuingAgency || dynamicRoadmap[d.name].issuingAgency || 'Regulatory Authority',
+                dynamicRoadmap[safeName] = {
+                    ...dynamicRoadmap[safeName],
+                    description: d.description || dynamicRoadmap[safeName].description,
+                    category: d.category || dynamicRoadmap[safeName].category,
+                    issuingAgency: d.issuingAgency || dynamicRoadmap[safeName].issuingAgency || 'Regulatory Authority',
                     required: d.isMandatory !== false
                 };
             } else {
                 // New requirement
-                dynamicRoadmap[d.name] = {
+                dynamicRoadmap[safeName] = {
                     required: d.isMandatory !== false,
                     status: 'Pending',
                     description: d.description,
@@ -468,9 +638,10 @@ const RegisterConsignment: React.FC = () => {
 
         // 3. Merge Manual Requirements
         existingReqs.forEach(req => {
-            if (!dynamicRoadmap[req]) {
+            const safeReq = sanitizeDocName(req);
+            if (!dynamicRoadmap[safeReq]) {
                 const responsibleAgent = complianceService.getResponsibleAgent(req, 'Custom');
-                dynamicRoadmap[req] = {
+                dynamicRoadmap[safeReq] = {
                     required: true,
                     status: 'Pending',
                     description: 'Manually added requirement via Dashboard.',
@@ -498,22 +669,27 @@ const RegisterConsignment: React.FC = () => {
             const hsCode = consignment.hsCode || '';
             const newRoadmap = await refreshComplianceRoadmap(newOrigin, newDest, product, hsCode, manualRequirements);
 
-            const updatedConsignment = {
-                ...consignment,
+            // ATOMIC UPDATE: Send individual fields to avoid clobbering other roadmap items
+            const updates: any = {
                 exportFrom: newOrigin,
-                importTo: newDest,
-                roadmap: newRoadmap
+                importTo: newDest
             };
 
-            setConsignment(updatedConsignment);
-            await consignmentService.updateConsignment(consignment.id, {
-                exportFrom: newOrigin,
-                importTo: newDest,
-                roadmap: newRoadmap
+            // Convert new roadmap to atomic field updates (dot notation)
+            Object.entries(newRoadmap).forEach(([key, value]) => {
+                updates[`roadmap.${key}`] = value;
             });
+
+            await consignmentService.updateConsignment(consignment.id, updates);
         } catch (e) {
             console.error("Failed to update route/roadmap:", e);
-            alert("Failed to refresh compliance requirements.");
+            setConfirmModal({
+                isOpen: true,
+                title: 'Roadmap Error',
+                message: "Failed to refresh compliance requirements for the selected route.",
+                variant: 'danger',
+                onConfirm: closeConfirm
+            });
         } finally {
             setLoading(false);
             setStatusMessage(null);
@@ -536,21 +712,24 @@ const RegisterConsignment: React.FC = () => {
             // Use current export/import as truth
             const newRoadmap = await refreshComplianceRoadmap(exportFrom, importTo, product, newCode, manualRequirements);
 
-            const updatedConsignment = {
-                ...consignment,
-                hsCode: newCode,
-                roadmap: newRoadmap
-            };
+            const updates: any = { hsCode: newCode };
 
-            setConsignment(updatedConsignment);
-            await consignmentService.updateConsignment(consignment.id, {
-                hsCode: newCode,
-                roadmap: newRoadmap
+            // Convert to atomic field updates
+            Object.entries(newRoadmap).forEach(([key, value]) => {
+                updates[`roadmap.${key}`] = value;
             });
+
+            await consignmentService.updateConsignment(consignment.id, updates);
 
         } catch (e) {
             console.error("Failed to update HS Code/roadmap:", e);
-            alert("Failed to refresh compliance requirements based on new HS Code.");
+            setConfirmModal({
+                isOpen: true,
+                title: 'HS Code Error',
+                message: "Failed to refresh compliance requirements based on the new HS Code.",
+                variant: 'danger',
+                onConfirm: closeConfirm
+            });
         } finally {
             setLoading(false);
             setStatusMessage(null);
@@ -560,7 +739,13 @@ const RegisterConsignment: React.FC = () => {
     // --- NEW: Rapid Scan (One-Step Flow) with Progress Tracking ---
     const handleRapidScan = async (file: File) => {
         if (!currentUser) {
-            alert("Please sign in first.");
+            setConfirmModal({
+                isOpen: true,
+                title: 'Sign In Required',
+                message: 'Please sign in to access the VeriPura Rapid Scan and Register Consignments.',
+                variant: 'info',
+                onConfirm: () => navigate('/login')
+            });
             return;
         }
 
@@ -602,6 +787,8 @@ const RegisterConsignment: React.FC = () => {
             const newConsignment = await consignmentService.createConsignment(currentUser.uid, {
                 exportFrom: origin,
                 importTo: dest,
+                sellerName: analysis.sellerName,
+                buyerName: analysis.buyerName,
                 additionalRequirements: manualRequirements,
                 roadmap: dynamicRoadmap,
                 products: analysis.products?.map((p: any) => ({
@@ -688,7 +875,13 @@ const RegisterConsignment: React.FC = () => {
                 updateProgress(currentStep.id, 'error', `Error: ${e instanceof Error ? e.message : String(e)}`);
             }
 
-            alert(`Scan failed: ${e instanceof Error ? e.message : String(e)}`);
+            setConfirmModal({
+                isOpen: true,
+                title: 'Scan Failed',
+                message: `The AI Rapid Scan encountered a critical error: ${e instanceof Error ? e.message : String(e)}`,
+                variant: 'danger',
+                onConfirm: closeConfirm
+            });
         } finally {
             setLoading(false);
             setStatusMessage(null);
@@ -705,31 +898,31 @@ const RegisterConsignment: React.FC = () => {
                     </div>
                 )}
 
-                {hasAnalyzedPO && oracleAnalysis && (
+                {((hasAnalyzedPO && oracleAnalysis) || (loading && hasAnalyzedPO)) && (
                     <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
                         {/* Progress Tracker */}
-                        <div className="bg-white rounded-xl shadow-lg p-6 mb-8 max-w-2xl mx-auto">
-                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                <Bot className="w-5 h-5 text-blue-600" />
+                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-6 mb-8 max-w-2xl mx-auto border border-slate-200 dark:border-slate-800">
+                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
+                                <Bot className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                 VeriPura AI Processing
                             </h3>
 
                             <div className="space-y-3">
                                 {uploadProgress.map((step, index) => (
-                                    <div key={step.id} className={`flex items-center gap-3 p-3 rounded-lg ${step.status === 'in_progress' ? 'bg-blue-50 border border-blue-200' :
-                                        step.status === 'completed' ? 'bg-emerald-50 border border-emerald-200' :
-                                            step.status === 'error' ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-100'
+                                    <div key={step.id} className={`flex items-center gap-3 p-3 rounded-lg border ${step.status === 'in_progress' ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800/50' :
+                                        step.status === 'completed' ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800/50' :
+                                            step.status === 'error' ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800/50' : 'bg-gray-50 border-gray-100 dark:bg-slate-800/50 dark:border-slate-700/50'
                                         }`}>
-                                        <div className={`p-2 rounded-full ${step.status === 'in_progress' ? 'bg-blue-100 text-blue-600' :
-                                            step.status === 'completed' ? 'bg-emerald-100 text-emerald-600' :
-                                                step.status === 'error' ? 'bg-red-100 text-red-600' : 'bg-gray-200 text-gray-400'
+                                        <div className={`p-2 rounded-full ${step.status === 'in_progress' ? 'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-200' :
+                                            step.status === 'completed' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-800 dark:text-emerald-200' :
+                                                step.status === 'error' ? 'bg-red-100 text-red-600 dark:bg-red-800 dark:text-red-200' : 'bg-gray-200 text-gray-400 dark:bg-slate-700 dark:text-slate-500'
                                             }`}>
                                             {getStepIcon(step.icon)}
                                         </div>
                                         <div className="flex-1">
-                                            <p className={`text-sm font-medium ${step.status === 'in_progress' ? 'text-blue-700' :
-                                                step.status === 'completed' ? 'text-emerald-700' :
-                                                    step.status === 'error' ? 'text-red-700' : 'text-gray-500'
+                                            <p className={`text-sm font-medium ${step.status === 'in_progress' ? 'text-blue-700 dark:text-blue-300' :
+                                                step.status === 'completed' ? 'text-emerald-700 dark:text-emerald-300' :
+                                                    step.status === 'error' ? 'text-red-700 dark:text-red-300' : 'text-gray-500 dark:text-slate-400'
                                                 }`}>
                                                 {step.label}
                                             </p>
@@ -748,24 +941,24 @@ const RegisterConsignment: React.FC = () => {
                             </div>
 
                             {statusMessage && (
-                                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                                    <p className="text-sm text-blue-800">{statusMessage}</p>
+                                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/50">
+                                    <p className="text-sm text-blue-800 dark:text-blue-300 font-medium">{statusMessage}</p>
                                 </div>
                             )}
                         </div>
 
                         {/* Detailed Scan Results */}
                         {scanResults && !loading && (
-                            <div className="bg-white rounded-xl shadow-lg p-6 mb-8 max-w-2xl mx-auto border border-slate-200">
-                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-900">
-                                    <FileCheck className="w-5 h-5 text-emerald-600" />
+                            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-6 mb-8 max-w-2xl mx-auto border border-slate-200 dark:border-slate-800">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
+                                    <FileCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                                     Document Processing Complete
                                 </h3>
 
                                 {/* Document Info */}
                                 <div className="space-y-4 mb-6">
-                                    <div className="bg-slate-50 p-4 rounded-lg">
-                                        <h4 className="text-sm font-semibold text-slate-700 mb-2">Purchase Order Details</h4>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-800">
+                                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2 font-black uppercase tracking-wider">Purchase Order Details</h4>
                                         {oracleAnalysis && (
                                             <div className="space-y-2 text-sm">
                                                 {oracleAnalysis.sellerName && (
@@ -795,13 +988,13 @@ const RegisterConsignment: React.FC = () => {
                                                 {oracleAnalysis.products && oracleAnalysis.products[0] && (
                                                     <>
                                                         <div className="flex justify-between">
-                                                            <span className="text-slate-500">Product:</span>
-                                                            <span className="font-medium text-slate-900">{oracleAnalysis.products[0].name}</span>
+                                                            <span className="text-slate-500 dark:text-slate-400">Product:</span>
+                                                            <span className="font-medium text-slate-900 dark:text-white">{oracleAnalysis.products[0].name}</span>
                                                         </div>
                                                         {oracleAnalysis.products[0].hsCode && (
                                                             <div className="flex justify-between">
-                                                                <span className="text-slate-500">HS Code:</span>
-                                                                <span className="font-medium text-slate-900">{oracleAnalysis.products[0].hsCode}</span>
+                                                                <span className="text-slate-500 dark:text-slate-400">HS Code:</span>
+                                                                <span className="font-medium text-slate-900 dark:text-white">{oracleAnalysis.products[0].hsCode}</span>
                                                             </div>
                                                         )}
                                                     </>
@@ -811,20 +1004,20 @@ const RegisterConsignment: React.FC = () => {
                                     </div>
 
                                     {/* Security & Blockchain */}
-                                    <div className="bg-slate-50 p-4 rounded-lg">
-                                        <h4 className="text-sm font-semibold text-slate-700 mb-2">Security & Verification</h4>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-800">
+                                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2 font-black uppercase tracking-wider">Security & Verification</h4>
                                         <div className="space-y-2">
                                             {scanResults.documentHash && (
                                                 <div className="text-sm">
-                                                    <span className="text-slate-500">Document Hash:</span>
-                                                    <code className="ml-2 px-2 py-1 bg-slate-200 rounded text-xs font-mono break-all">
+                                                    <span className="text-slate-500 dark:text-slate-400">Document Hash:</span>
+                                                    <code className="ml-2 px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded text-xs font-mono break-all text-slate-600 dark:text-slate-300">
                                                         {scanResults.documentHash.substring(0, 20)}...{scanResults.documentHash.substring(scanResults.documentHash.length - 8)}
                                                     </code>
                                                 </div>
                                             )}
                                             {scanResults.iotaTxHash && (
                                                 <div className="text-sm">
-                                                    <span className="text-slate-500">IOTA Transaction:</span>
+                                                    <span className="text-slate-500 dark:text-slate-400">IOTA Transaction:</span>
                                                     <a
                                                         href={scanResults.iotaExplorerUrl}
                                                         target="_blank"
@@ -890,24 +1083,37 @@ const RegisterConsignment: React.FC = () => {
     const hasItems = roadmapItems.length > 0;
 
     // Prepare unified document list from roadmap
-    const allDocuments = roadmapItems.map(([name, data]: [string, any]) => ({
-        name,
-        status: data.status || 'Pending',
-        category: data.category,
-        required: data.required || data.isMandatory,
-        addedBy: data.addedBy,
-        description: data.description,
-        agencyLink: data.agencyLink,
-        issuingAgency: data.issuingAgency,
-        isMandatory: data.isMandatory,
-        fileUrl: data.fileUrl,
-        fileIv: data.fileIv,
-        iotaExplorerUrl: data.iotaExplorerUrl,
-        iotaTxHash: data.iotaTxHash,
-        iotaTxCost: data.iotaTxCost,
-        iotaError: data.iotaError,
-        analysis: data.analysis
-    }));
+    const allDocuments = roadmapItems
+        .map(([name, data]: [string, any]) => ({
+            name,
+            status: data.status || 'Pending',
+            category: data.category,
+            required: data.required || data.isMandatory,
+            addedBy: data.addedBy,
+            description: data.description,
+            agencyLink: data.agencyLink,
+            issuingAgency: data.issuingAgency,
+            isMandatory: data.isMandatory,
+            fileUrl: data.fileUrl,
+            fileIv: data.fileIv,
+            iotaExplorerUrl: data.iotaExplorerUrl,
+            iotaTxHash: data.iotaTxHash,
+            iotaTxCost: data.iotaTxCost,
+            iotaError: data.iotaError,
+            analysis: data.analysis
+        }))
+        // Sort: Validated first, then Pending, then others (case-insensitive)
+        .sort((a, b) => {
+            const statusOrder: Record<string, number> = { 
+                'validated': 0, 
+                'pending': 1, 
+                'pending review': 2, 
+                'rejected': 3 
+            };
+            const orderA = statusOrder[a.status?.toLowerCase() ?? ''] ?? 99;
+            const orderB = statusOrder[b.status?.toLowerCase() ?? ''] ?? 99;
+            return orderA - orderB;
+        });
 
     // Check if Packing List is uploaded to show/hide Logistics section
     const hasPackingList = Object.entries(consignment.roadmap || {}).some(([name, item]: [string, any]) =>
@@ -915,10 +1121,10 @@ const RegisterConsignment: React.FC = () => {
     );
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 pb-20">
+        <div className="max-w-4xl mx-auto space-y-8 pb-20 text-slate-900 dark:text-white">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900">Consignment #{consignment.id.slice(0, 6)}</h2>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Consignment #{consignment.id.slice(0, 6)}</h2>
                     <div className="flex items-center gap-2 mt-1">
                         <input
                             type="text"
@@ -974,12 +1180,14 @@ const RegisterConsignment: React.FC = () => {
                 </div>
             </div>
 
-            <ConsignmentChat
-                consignmentId={consignment.id}
-                messages={consignment.agentState?.messages || []}
-                isOpen={isChatOpen}
-                onClose={() => setIsChatOpen(false)}
-            />
+            <ErrorBoundary>
+                <ConsignmentChat
+                    consignmentId={consignment.id}
+                    messages={consignment.agentState?.messages || []}
+                    isOpen={isChatOpen}
+                    onClose={() => setIsChatOpen(false)}
+                />
+            </ErrorBoundary>
 
             <RouteChangeConfirmation
                 isOpen={isRouteConfirmOpen}
@@ -990,8 +1198,8 @@ const RegisterConsignment: React.FC = () => {
             />
 
             {/* Compliance Roadmap (Moved to Top) */}
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
-                <h3 className="font-bold text-lg mb-6">Compliance Roadmap</h3>
+            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 p-8">
+                <h3 className="font-bold text-lg mb-6 text-slate-900 dark:text-white">Compliance Roadmap</h3>
 
                 {/* Guardian Agent Analysis Dashboard */}
                 {(consignment?.agentState?.activityLog?.length > 0 ||
@@ -1016,13 +1224,15 @@ const RegisterConsignment: React.FC = () => {
                 )}
 
                 {/* Unified Document List - All Documents in One Place */}
-                <UnifiedDocumentList
-                    documents={allDocuments}
-                    onUpload={handleFileSelect}
-                    onPreview={handlePreview}
-                    onApprove={handleApprove}
-                    onReject={handleReject}
-                />
+                <ErrorBoundary>
+                    <UnifiedDocumentList
+                        documents={allDocuments}
+                        onUpload={handleFileSelect}
+                        onPreview={handlePreview}
+                        onApprove={handleApprove}
+                        onReject={handleReject}
+                    />
+                </ErrorBoundary>
 
 
             </div>
@@ -1091,45 +1301,47 @@ const RegisterConsignment: React.FC = () => {
             {/* Shipment Configuration (Requirements & Attributes) */}
             {/* Additional Requirements Selector */}
             {/* Additional Requirements Selector (Replaced by Guardian Chat) */}
-            <GuardianRequirementChat
-                onAddRule={(name, category) => {
-                    const newReq: ChecklistItem = {
-                        id: name, // Using name as ID for now
-                        documentName: name,
-                        description: 'Manually added requirement.',
-                        category: category,
-                        issuingAgency: complianceService.getResponsibleAgent(name, category),
-                        agencyLink: '',
-                        status: ChecklistItemStatus.PENDING,
-                        isMandatory: true
-                    };
-                    const available = consignment?.roadmap || {};
-                    const updatedMap = { ...available, [name]: newReq };
-                    setConsignment({ ...consignment, roadmap: updatedMap } as Consignment);
-                    if (consignment?.id) {
-                        consignmentService.updateConsignment(consignment.id, { roadmap: updatedMap });
-                    }
-                }}
-                onRemoveRule={(name) => {
-                    const available = consignment?.roadmap || {};
-                    // Create a copy to avoid direct mutation (though spread does shallow copy)
-                    const updatedMap = { ...available };
+            <ErrorBoundary>
+                <GuardianRequirementChat
+                    onAddRule={(name, category) => {
+                        const newReq: ChecklistItem = {
+                            id: name, // Using name as ID for now
+                            documentName: name,
+                            description: 'Manually added requirement.',
+                            category: category,
+                            issuingAgency: complianceService.getResponsibleAgent(name, category),
+                            agencyLink: '',
+                            status: ChecklistItemStatus.PENDING,
+                            isMandatory: true
+                        };
+                        const available = consignment?.roadmap || {};
+                        const updatedMap = { ...available, [name]: newReq };
+                        setConsignment({ ...consignment, roadmap: updatedMap } as Consignment);
+                        if (consignment?.id) {
+                            consignmentService.updateConsignment(consignment.id, { roadmap: updatedMap });
+                        }
+                    }}
+                    onRemoveRule={(name) => {
+                        const available = consignment?.roadmap || {};
+                        // Create a copy to avoid direct mutation (though spread does shallow copy)
+                        const updatedMap = { ...available };
 
-                    // Simple fuzzy delete if exact match fails
-                    if (updatedMap[name]) {
-                        delete updatedMap[name];
-                    } else {
-                        // Try to find by partial match / loose equality if LLM returns different casing
-                        const key = Object.keys(updatedMap).find(k => k.toLowerCase() === name.toLowerCase());
-                        if (key) delete updatedMap[key];
-                    }
+                        // Simple fuzzy delete if exact match fails
+                        if (updatedMap[name]) {
+                            delete updatedMap[name];
+                        } else {
+                            // Try to find by partial match / loose equality if LLM returns different casing
+                            const key = Object.keys(updatedMap).find(k => k.toLowerCase() === name.toLowerCase());
+                            if (key) delete updatedMap[key];
+                        }
 
-                    setConsignment({ ...consignment, roadmap: updatedMap } as Consignment);
-                    if (consignment?.id) {
-                        consignmentService.updateConsignment(consignment.id, { roadmap: updatedMap });
-                    }
-                }}
-            />
+                        setConsignment({ ...consignment, roadmap: updatedMap } as Consignment);
+                        if (consignment?.id) {
+                            consignmentService.updateConsignment(consignment.id, { roadmap: updatedMap });
+                        }
+                    }}
+                />
+            </ErrorBoundary>
 
             {/* Route Mismatch Correction Modal */}
             {
@@ -1143,57 +1355,64 @@ const RegisterConsignment: React.FC = () => {
                     const detectedDest = flaggingItem.analysis.extractedDestination;
 
                     return (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-amber-200">
-                                <div className="bg-amber-50 p-6 text-center border-b border-amber-100">
-                                    <div className="mx-auto w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4 ring-8 ring-amber-50/50">
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-amber-200 dark:border-amber-900/50">
+                                <div className="bg-amber-50 dark:bg-amber-900/20 p-6 text-center border-b border-amber-100 dark:border-amber-900/30">
+                                    <div className="mx-auto w-16 h-16 bg-amber-100 dark:bg-amber-800 text-amber-600 dark:text-amber-300 rounded-full flex items-center justify-center mb-4 ring-8 ring-amber-50/50 dark:ring-amber-900/20">
                                         <MapPin size={32} />
                                     </div>
-                                    <h3 className="text-xl font-bold text-amber-900">Route Mismatch Detected</h3>
-                                    <p className="text-amber-700 mt-2 text-sm">
+                                    <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100">Route Mismatch Detected</h3>
+                                    <p className="text-amber-700 dark:text-amber-400 mt-2 text-sm font-medium">
                                         The document you uploaded indicates a different trade route than what you originally selected.
                                     </p>
                                 </div>
 
                                 <div className="p-6 space-y-6">
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 opacity-60">
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Your Selection</p>
-                                            <div className="flex flex-col gap-1 font-semibold text-slate-700">
+                                        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 opacity-60">
+                                            <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Your Selection</p>
+                                            <div className="flex flex-col gap-1 font-semibold text-slate-700 dark:text-slate-300">
                                                 <span>{consignment.exportFrom}</span>
-                                                <span className="text-slate-400 text-xs">↓</span>
+                                                <span className="text-slate-400 dark:text-slate-600 text-xs text-center">↓</span>
                                                 <span>{consignment.importTo}</span>
                                             </div>
                                         </div>
-                                        <div className="p-4 rounded-xl border border-amber-200 bg-amber-50">
-                                            <p className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">Document Shows</p>
-                                            <div className="flex flex-col gap-1 font-bold text-amber-900">
+                                        <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/10">
+                                            <p className="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase tracking-wider mb-1">Document Shows</p>
+                                            <div className="flex flex-col gap-1 font-bold text-amber-900 dark:text-amber-100">
                                                 <span>{detectedOrigin || 'Unknown'}</span>
-                                                <span className="text-amber-400 text-xs">↓</span>
+                                                <span className="text-amber-400 dark:text-amber-600 text-xs text-center">↓</span>
                                                 <span>{detectedDest || 'Unknown'}</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3 text-sm text-blue-800">
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg flex items-start gap-3 text-sm text-blue-800 dark:text-blue-300 border border-blue-100 dark:border-blue-800/30">
                                         <Info className="shrink-0 mt-0.5" size={16} />
-                                        <p>
+                                        <p className="font-medium">
                                             Updating the route is recommended to ensure the correct compliance checklist (e.g., Swiss vs. US regulations) is generated for this consignment.
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
+                                <div className="p-6 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex gap-3">
                                     <button
                                         onClick={() => {
                                             // "No, Keep Original"
-                                            // We just close this modal (effectively ignoring the suggestion).
-                                            // In a real app, we might mark this suggestion as "dismissed" in the DB.
-                                            alert("Warning: Keeping the original route may result in incorrect compliance requirements.");
-                                            // Force refresh to clear modal logic if we had state (here we just reload page or rely on re-render)
-                                            window.location.reload();
+                                            setConfirmModal({
+                                                isOpen: true,
+                                                title: 'Warning',
+                                                message: 'Keeping the original route may result in incorrect compliance requirements. Are you sure?',
+                                                confirmText: 'Yes, Keep Original',
+                                                cancelText: 'Back',
+                                                variant: 'warning',
+                                                onConfirm: () => {
+                                                    closeConfirm();
+                                                    window.location.reload();
+                                                }
+                                            });
                                         }}
-                                        className="flex-1 px-4 py-3 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors"
+                                        className="flex-1 px-4 py-3 text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors"
                                     >
                                         Keep Original
                                     </button>
@@ -1263,82 +1482,31 @@ const RegisterConsignment: React.FC = () => {
                 })()
             }
 
-            {/* Preview Modal */}
-            {
-                previewUrl && previewFile && (
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                            {/* Modal Header */}
-                            <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-fuchsia-100 text-fuchsia-600 rounded-lg">
-                                        <Eye size={20} />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-slate-900">Preview: {pendingDocType}</h3>
-                                        <p className="text-xs text-slate-500">{previewFile.name} • {(previewFile.size / 1024).toFixed(1)} KB</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={handleCancelPreview}
-                                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                                >
-                                    <X size={20} className="text-slate-400" />
-                                </button>
-                            </div>
+            {/* Document Preview Modal (Unified for Upload & View) */}
+            {/* Modal Layer */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                cancelText={confirmModal.cancelText}
+                variant={confirmModal.variant}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={closeConfirm}
+            />
 
-                            {/* PDF Preview */}
-                            <div className="flex-1 overflow-auto bg-slate-100 p-4">
-                                {previewFile.type === 'application/pdf' ? (
-                                    <iframe
-                                        src={previewUrl}
-                                        className="w-full h-[60vh] rounded-lg border border-slate-200 bg-white"
-                                        title="PDF Preview"
-                                    />
-                                ) : previewFile.type.startsWith('image/') ? (
-                                    <img
-                                        src={previewUrl}
-                                        alt="Document Preview"
-                                        className="max-w-full max-h-[60vh] mx-auto rounded-lg shadow-lg"
-                                    />
-                                ) : (
-                                    <div className="flex items-center justify-center h-[60vh] text-slate-500">
-                                        <div className="text-center">
-                                            <FileText size={48} className="mx-auto mb-4 opacity-50" />
-                                            <p>Preview not available for this file type</p>
-                                            <p className="text-sm text-slate-400 mt-1">{previewFile.type || 'Unknown type'}</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Modal Footer */}
-                            <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-slate-50">
-                                <p className="text-sm text-slate-500">
-                                    <Sparkles size={14} className="inline mr-1" />
-                                    VeriPura™ AI will analyze this document for compliance
-                                </p>
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={handleCancelPreview}
-                                        className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg font-medium transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleConfirmUpload}
-                                        disabled={loading}
-                                        className="px-6 py-2 bg-gradient-to-r from-fuchsia-600 to-fuchsia-700 text-white font-bold rounded-lg hover:from-fuchsia-700 hover:to-fuchsia-800 shadow-sm flex items-center gap-2 disabled:opacity-50"
-                                    >
-                                        {loading ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
-                                        Analyze & Upload
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
+            <DocumentPreviewModal
+                isOpen={!!previewUrl}
+                onClose={handleCancelPreview}
+                title={pendingDocType || 'Document Preview'}
+                file={previewFile}
+                fileUrl={previewUrl}
+                isLoading={loading}
+                onConfirm={handleConfirmUpload}
+                showActions={!!previewFile} // Only show "Analyze & Upload" for local files
+                status={consignment?.roadmap?.[pendingDocType || '']?.status}
+                mimeType={previewMimeType}
+            />
 
         </div>
     );

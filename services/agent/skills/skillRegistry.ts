@@ -27,19 +27,32 @@ export class SkillRegistry {
         console.log('[SkillRegistry] Available exports from index:', Object.keys(AllSkills).filter(k => typeof AllSkills[k] === 'function').join(', '));
 
         Object.entries(AllSkills).forEach(([name, SkillClass]: [string, any]) => {
-            if (typeof SkillClass === 'function' && name !== 'SkillRegistry') {
+            // Guardian Agent Pattern: Only instantiate functions that look like classes (uppercase start)
+            // AND are not explicitly excluded helpers/instances.
+            const isProbablyClass = typeof SkillClass === 'function' && /^[A-Z]/.test(name);
+            const isExcluded = [
+                'SkillRegistry',
+                'SkillLearningEngine',
+                'ConsignmentMerkleTree',
+                'SkillChainingEngine',
+                'SkillTelemetry',
+                'ReliabilityFallbackEngine'
+            ].includes(name);
+
+            if (isProbablyClass && !isExcluded) {
                 try {
                     const skillInstance = new SkillClass();
                     if (skillInstance && typeof skillInstance === 'object' && 'id' in skillInstance && 'execute' in skillInstance) {
                         this.skills.set(skillInstance.id, skillInstance);
                         console.log(`[SkillRegistry] ✓ Loaded: ${skillInstance.id} (${skillInstance.name})`);
-                    } else {
-                        console.warn(`[SkillRegistry] ✗ Skipped "${name}": missing id/execute`);
                     }
                 } catch (e: any) {
-                    const errorMsg = `Failed to load "${name}": ${e.message}`;
-                    this.loadErrors.push(errorMsg);
-                    console.warn(`[SkillRegistry] ✗ ${errorMsg}`);
+                    // Silently fail for non-constructable functions that started with uppercase (safety check)
+                    if (!e.message.includes('is not a constructor')) {
+                        const errorMsg = `Failed to load "${name}": ${e.message}`;
+                        this.loadErrors.push(errorMsg);
+                        console.warn(`[SkillRegistry] ✗ ${errorMsg}`);
+                    }
                 }
             }
         });

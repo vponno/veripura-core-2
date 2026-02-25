@@ -28,6 +28,8 @@ interface AuthContextType {
     logout: () => Promise<void>;
     createDID: (alias: string, entityType: 'farmer' | 'retailer' | 'product' | 'certifier') => Promise<void>;
     isCreatingDID: boolean;
+    balance: number | null;
+    refreshBalance: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,11 +48,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isCreatingDID, setIsCreatingDID] = useState(false);
+    const [balance, setBalance] = useState<number | null>(null);
+
+    const refreshBalance = async () => {
+        if (userProfile?.iotaAddress) {
+            try {
+                const bal = await iotaService.getAddressBalance(userProfile.iotaAddress);
+                setBalance(bal);
+            } catch (err) {
+                console.error("[AuthContext] Failed to refresh balance:", err);
+            }
+        }
+    };
 
     // Initialize IOTA Identity service
     useEffect(() => {
         iotaIdentityService.initialize();
     }, []);
+
+    // Fetch initial balance when userProfile is ready
+    useEffect(() => {
+        if (userProfile?.iotaAddress) {
+            refreshBalance();
+        }
+    }, [userProfile?.iotaAddress]);
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -64,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     if (!userData) {
                         // New user - create wallet and optionally DID
                         const { address, privateKey } = await iotaService.createBurnerWallet();
-                        
+
                         const newUserProfile: UserProfile = {
                             email: user.email || '',
                             iotaAddress: address,
@@ -75,12 +96,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                         await setDoc(userDocRef, newUserProfile, { merge: true });
                         localStorage.setItem(`iota_sk_${user.uid}`, privateKey);
-                        
+
                         setUserProfile(newUserProfile);
                     } else {
                         // Existing user - load profile
                         setUserProfile(userData);
-                        
+
                         // Ensure wallet key is in localStorage
                         if (userData.iotaPrivateKey) {
                             localStorage.setItem(`iota_sk_${user.uid}`, userData.iotaPrivateKey);
@@ -125,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const createDID = async (
-        alias: string, 
+        alias: string,
         entityType: 'farmer' | 'retailer' | 'product' | 'certifier'
     ) => {
         if (!currentUser || !userProfile) {
@@ -141,7 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Create DID using IOTA Identity Service
             const { did, privateKey, documentJson } = await iotaIdentityService.createDID(
-                alias, 
+                alias,
                 entityType
             );
 
@@ -179,15 +200,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ 
-            currentUser, 
+        <AuthContext.Provider value={{
+            currentUser,
             userProfile,
-            loading, 
-            error, 
-            signInWithGoogle, 
+            loading,
+            error,
+            signInWithGoogle,
             logout,
             createDID,
-            isCreatingDID
+            isCreatingDID,
+            balance,
+            refreshBalance
         }}>
             {!loading && children}
         </AuthContext.Provider>

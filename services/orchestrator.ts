@@ -4,6 +4,37 @@ import { AgentEventResult } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from './lib/logger';
 
+/**
+ * Remove undefined values from object for Firestore compatibility
+ * Also sanitizes object keys to ensure they are strings
+ * Firestore does not accept undefined values or invalid field paths
+ */
+function sanitizeForFirestore(obj: any): any {
+    if (obj === null) return null;
+    if (obj === undefined) return undefined;
+    
+    if (Array.isArray(obj)) {
+        return obj.map(item => sanitizeForFirestore(item));
+    }
+    
+    if (typeof obj === 'object') {
+        const cleaned: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+            // Ensure key is a string and sanitize
+            const sanitizedKey = String(key)
+                .replace(/[~*\/\[\\\]]/g, '_')
+                .trim();
+            
+            if (value !== undefined && sanitizedKey) {
+                cleaned[sanitizedKey] = sanitizeForFirestore(value);
+            }
+        }
+        return cleaned;
+    }
+    
+    return obj;
+}
+
 export interface POUploadContext {
     consignmentId: string;
     documentType: string;
@@ -223,10 +254,17 @@ export class GuardianOrchestrator {
 
         console.log('[Orchestrator] Validation result:', { validationLevel, status });
 
+        // Ensure documentType is a string
+        const safeDocType = String(documentType || 'Unknown')
+            .replace(/^[.]+/, '')  // Remove leading dots
+            .replace(/[~*\/\[\\\]]/g, '_')
+            .trim();
+
         const updates: any = {
-            [documentType]: {
+            [safeDocType]: {
                 status,
                 validationLevel,
+                category: 'Commercial', // Ensure default category for Firestore safety
                 analysis: {
                     ...analysisResult,
                     agentAuditTrail: agentResult.activityLog,
@@ -241,16 +279,30 @@ export class GuardianOrchestrator {
             console.log(`[Orchestrator] 📄 Adding ${agentResult.requiredDocuments.length} required documents:`);
 
             agentResult.requiredDocuments.forEach(doc => {
-                console.log(`[Orchestrator]   + ${doc.name}: ${doc.description || doc.reason}`);
-                if (!updates[doc.name]) {
-                    updates[doc.name] = {
+                // Ensure doc.name is a string, sanitize for Firestore
+                const docName = String(doc?.name || 'Unknown Document')
+                    .replace(/^[.]+/, '')  // Remove leading dots
+                    .replace(/[~*\/\[\\\]]/g, '_')
+                    .trim();
+                
+                // Skip invalid document names
+                if (!docName || docName === '[object Object]') {
+                    console.warn('[Orchestrator] ⚠️ Skipping invalid document name:', doc?.name);
+                    return;
+                }
+                
+                const sourceAgent = doc.source || 'guardian_agent';
+                console.log(`[Orchestrator]   → from ${sourceAgent}: ${docName}: ${doc.description || doc.reason}`);
+                
+                if (!updates[docName]) {
+                    updates[docName] = {
                         required: true,
                         status: 'Pending',
                         description: doc.description,
                         agencyLink: doc.agencyLink,
                         category: doc.category,
-                        reason: doc.reason || `Required by ${doc.agency || 'compliance specialist'}`,
-                        addedBy: 'guardian_agent'
+                        reason: doc.reason || `Required by ${doc.agency || sourceAgent}`,
+                        addedBy: sourceAgent
                     };
                 }
             });
@@ -271,34 +323,73 @@ export class GuardianOrchestrator {
         console.log('║ [Orchestrator] 💾 APPLYING DATABASE UPDATES               ║');
         console.log('╠════════════════════════════════════════════════════════════╣');
         console.log(`║ Consignment: ${consignmentId}`);
-        console.log(`║ Roadmap:    ${updates.roadmap ? 'Yes' : 'No'}`);
+        console.log(`║ Roadmap:    ${updates.roadmap ? Object.keys(updates.roadmap).length + ' docs' : 'No'}`);
         console.log(`║ AgentState: ${updates.agentState ? 'Yes' : 'No'}`);
         console.log(`║ Guardian:   ${updates.guardianAgent ? 'Yes' : 'No'}`);
         console.log('╚════════════════════════════════════════════════════════════╝');
 
         const updatePayload: any = {};
 
+        // ATOMIC ROADMAP UPDATES
         if (updates.roadmap) {
-            const current = await consignmentService.getConsignment(consignmentId);
-            const currentRoadmap = current?.roadmap || {};
-            updatePayload.roadmap = {
-                ...currentRoadmap,
-                ...updates.roadmap
-            };
-            console.log('[Orchestrator] ✓ Roadmap merged');
+            // Debug: Log the roadmap keys
+            console.log('[Orchestrator] Raw roadmap keys:', Object.keys(updates.roadmap));
+            
+            for (const [docType, docData] of Object.entries(updates.roadmap)) {
+                // Debug: Log each docType
+                console.log('[Orchestrator] Processing docType:', docType, typeof docType);
+                
+                // Skip invalid keys (objects converted to strings, empty keys, etc.)
+                if (typeof docType !== 'string' || docType === '[object Object]' || !docType.trim()) {
+                    console.error('[Orchestrator] ❌ Skipping invalid docType:', docType);
+                    continue;
+                }
+                
+                // Ensure docType is a string and sanitize for Firestore field paths
+                const sanitizedDocType = String(docType)
+                    .replace(/^[.]+/, '') // Remove leading dots
+                    .replace(/[~*\/\[\\\]]/g, '_')  // Replace invalid chars
+                    .trim();
+                
+                console.log('[Orchestrator] Sanitized docType:', sanitizedDocType);
+                
+                if (!sanitizedDocType) continue;
+                
+                // Remove undefined values for Firestore compatibility
+                const cleanedData = sanitizeForFirestore(docData);
+                
+                // Use dot notation for nested roadmap fields
+                // FieldPath objects can't be used as plain object keys
+                const fieldPath = `roadmap.${sanitizedDocType}`;
+                updatePayload[fieldPath] = cleanedData;
+            }
+            console.log(`[Orchestrator] ✓ Roadmap updates prepared (${Object.keys(updates.roadmap).length} fields)`);
         }
 
         if (updates.agentState) {
-            updatePayload.agentState = updates.agentState;
+            updatePayload.agentState = sanitizeForFirestore(updates.agentState);
             console.log('[Orchestrator] ✓ Agent state updated');
         }
 
         if (updates.guardianAgent) {
-            updatePayload.guardianAgent = updates.guardianAgent;
+            updatePayload.guardianAgent = sanitizeForFirestore(updates.guardianAgent);
             console.log('[Orchestrator] ✓ Guardian Agent state updated');
         }
 
-        await consignmentService.updateConsignment(consignmentId, updatePayload);
+        if (Object.keys(updatePayload).length > 0) {
+            // Debug: Validate all field paths before sending
+            console.log('[Orchestrator] Final updatePayload keys:', Object.keys(updatePayload));
+            
+            for (const [key, value] of Object.entries(updatePayload)) {
+                if (key.includes('object Object') || key.includes('[object')) {
+                    console.error('[Orchestrator] ❌ Invalid key detected:', key);
+                    console.error('[Orchestrator] Full key:', key);
+                }
+            }
+            
+            await consignmentService.updateConsignment(consignmentId, updatePayload);
+            console.log('[Orchestrator] ✓ Updates apply complete');
+        }
 
         console.log('╔════════════════════════════════════════════════════════════╗');
         console.log('║ [Orchestrator] ✅ DATABASE UPDATES COMPLETE              ║');

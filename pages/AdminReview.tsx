@@ -53,51 +53,16 @@ const AdminReview: React.FC = () => {
         if (!confirm(`Confirm ${decision.toUpperCase()} decision?`)) return;
 
         try {
-            // Lazy load service
-            const { rlhfService } = await import('../services/rlhfService');
-
-            // 1. Resolve Case via Service (Handles Queue + Training Data)
-            await rlhfService.resolveCase(
-                item.id,
+            // 1. Resolve Case via Service (Handles Queue + Training Data + Roadmap Update atomically)
+            const { consignmentService } = await import('../services/consignmentService');
+            await consignmentService.resolveFlaggedDocument(
+                item.consignmentId,
+                item.docType,
                 decision,
-                softLabel,
                 reasoning || "No reasoning provided.",
+                softLabel,
                 'admin' // TODO: Get actual user ID
             );
-
-            // 2. Update Consignment Roadmap (Legacy Logic - could be moved to service listener in future)
-            const { updateDoc, doc, getDoc } = await import('firebase/firestore');
-            const consignmentRef = doc(db, 'consignments', item.consignmentId);
-            const consignmentSnap = await getDoc(consignmentRef);
-
-            if (consignmentSnap.exists()) {
-                const data = consignmentSnap.data();
-                const roadmap = data.roadmap || {};
-                const docData = roadmap[item.docType];
-
-                if (docData) {
-                    const newStatus = decision === 'approved' ? 'Validated' : 'Rejected';
-                    const newLevel = decision === 'approved' ? 'GREEN' : 'RED';
-
-                    const updatedDocData = {
-                        ...docData,
-                        status: newStatus,
-                        analysis: {
-                            ...docData.analysis,
-                            validationLevel: newLevel,
-                            requiresHumanReview: false,
-                            adminDecision: decision,
-                            adminDecisionAt: new Date().toISOString(),
-                            rlhfConfidence: softLabel, // Capture the human's stats on the object too
-                            rlhfReasoning: reasoning
-                        }
-                    };
-
-                    await updateDoc(consignmentRef, {
-                        [`roadmap.${item.docType}`]: updatedDocData
-                    });
-                }
-            }
 
             // Reset UI
             setSoftLabel(1.0);
@@ -164,12 +129,32 @@ const AdminReview: React.FC = () => {
                                     <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-xs">ID: {item.consignmentId.substring(0, 8)}...</span>
                                 </div>
 
-                                <div className="bg-red-50 border border-red-100 rounded-lg p-4 mb-4">
-                                    <h4 className="flex items-center gap-2 font-bold text-red-800 text-sm mb-2">
+                                <div className={`rounded-lg p-4 mb-4 border ${(item.reason?.toLowerCase().includes('handwriting') || item.reason?.toLowerCase().includes('tamper'))
+                                    ? 'bg-amber-50 border-amber-200 ring-2 ring-amber-500 ring-opacity-20'
+                                    : 'bg-red-50 border-red-100'
+                                    }`}>
+                                    <h4 className={`flex items-center gap-2 font-bold text-sm mb-2 ${(item.reason?.toLowerCase().includes('handwriting') || item.reason?.toLowerCase().includes('tamper'))
+                                        ? 'text-amber-800'
+                                        : 'text-red-800'
+                                        }`}>
                                         <AlertTriangle size={16} /> Flagged Reason
                                     </h4>
-                                    <p className="text-red-700 font-medium">{item.reason}</p>
-                                    {item.details && <p className="text-red-600 text-sm mt-1">{item.details}</p>}
+                                    <p className={
+                                        (item.reason?.toLowerCase().includes('handwriting') || item.reason?.toLowerCase().includes('tamper'))
+                                            ? 'text-amber-900 font-bold'
+                                            : 'text-red-700 font-medium'
+                                    }>{item.reason}</p>
+                                    {item.details && <p className={
+                                        (item.reason?.toLowerCase().includes('handwriting') || item.reason?.toLowerCase().includes('tamper'))
+                                            ? 'text-amber-700 text-sm mt-1'
+                                            : 'text-red-600 text-sm mt-1'
+                                    }>{item.details}</p>}
+
+                                    {(item.reason?.toLowerCase().includes('handwriting')) && (
+                                        <div className="mt-3 p-2 bg-amber-100 rounded border border-amber-200 text-xs text-amber-800">
+                                            <strong>Note:</strong> Handwriting requires careful verification of values against other documents.
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex gap-3 mt-4">
