@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Plus } from 'lucide-react';
+import { Send, Bot, User, Sparkles } from 'lucide-react';
 import { ChecklistItemCategory } from '../../types';
 import { complianceService } from '../../services/complianceService';
 
@@ -15,15 +15,6 @@ interface Message {
     timestamp: number;
     agentName?: string; // If sent by specific agent
 }
-
-const PRESET_CHIPS = [
-    { label: 'Phytosanitary Cert', category: ChecklistItemCategory.REGULATORY },
-    { label: 'Certificate of Origin', category: ChecklistItemCategory.REGULATORY },
-    { label: 'HACCP / ISO 22000', category: ChecklistItemCategory.FOOD_SAFETY },
-    { label: 'Organic Certificate', category: ChecklistItemCategory.CERTIFICATIONS },
-    { label: 'Bill of Lading', category: ChecklistItemCategory.REGULATORY },
-    { label: 'Lab Analysis', category: ChecklistItemCategory.FOOD_SAFETY },
-];
 
 export const GuardianRequirementChat: React.FC<GuardianRequirementChatProps> = ({ onAddRule, onRemoveRule }) => {
     const [messages, setMessages] = useState<Message[]>([
@@ -70,9 +61,6 @@ export const GuardianRequirementChat: React.FC<GuardianRequirementChatProps> = (
         setIsTyping(true);
         try {
             // 1. Analyze Intent via AI
-            // In a real app, this is an async call to Gemini
-            // For this demo, we might fall back to the heuristic if the API fails or is not mocked in the prompt
-            // But let's assume we use the new service
             const intent = await import('../../services/geminiService').then(m => m.analyzeGuardianIntent(text));
 
             if (intent.action === 'ADD_REQUIREMENT' && intent.docName && intent.category) {
@@ -133,10 +121,6 @@ export const GuardianRequirementChat: React.FC<GuardianRequirementChatProps> = (
         }
     };
 
-    const handleChipClick = (label: string, category: ChecklistItemCategory) => {
-        handleSendMessage(`Add ${label}`);
-    };
-
     return (
         <div className="mt-8 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col h-[400px]">
             {/* Header */}
@@ -195,24 +179,6 @@ export const GuardianRequirementChat: React.FC<GuardianRequirementChatProps> = (
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Actions (Chips) */}
-            <div className="px-4 py-2 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 overflow-x-auto whitespace-nowrap hide-scrollbar flex gap-2">
-                {PRESET_CHIPS.map((chip) => (
-                    <button
-                        key={chip.label}
-                        onClick={() => handleChipClick(chip.label, chip.category)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/30 hover:text-fuchsia-700 dark:hover:text-fuchsia-300 hover:border-fuchsia-200 dark:hover:border-fuchsia-800 transition-colors"
-                    >
-                        <Plus size={12} />
-                        {chip.label}
-                    </button>
-                ))}
-                {/* Hint Chip */}
-                <span className="text-xs text-slate-400 italic px-2 py-1.5">
-                    Try "Add Pesticide Report"...
-                </span>
-            </div>
-
             {/* Input Area */}
             <form
                 onSubmit={(e) => { e.preventDefault(); handleSendMessage(inputValue); }}
@@ -236,3 +202,5 @@ export const GuardianRequirementChat: React.FC<GuardianRequirementChatProps> = (
         </div>
     );
 };
+
+export default GuardianRequirementChat;
