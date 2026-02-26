@@ -1,4 +1,4 @@
-import { SubAgent } from './subAgent';
+import { SubAgent, AgentActivator, DynamicActivator } from './subAgent';
 import * as SubAgents from './subagents';
 
 export class SubAgentFactory {
@@ -125,6 +125,68 @@ export class SubAgentFactory {
         console.log(`[SubAgentFactory] → Required sub-agents: ${required.join(', ') || '(none)'}`);
         
         // Return unique IDs
+        return [...new Set(required)];
+    }
+
+    /**
+     * AI-driven: Determines which sub-agents are required based on the shipment context.
+     * Uses AI to intelligently determine agent activation - fully agentic, no hardcoded logic.
+     * @param context The simplified context object (destination, product, etc.)
+     */
+    public static async getRequiredSubAgentsAI(context: any): Promise<string[]> {
+        this.initialize();
+
+        console.log('╔════════════════════════════════════════════════════════════╗');
+        console.log('║ [SubAgentFactory] 🤖 AI-Driven Agent Activation          ║');
+        console.log('╠════════════════════════════════════════════════════════════╣');
+        console.log(`║ Context:`, JSON.stringify(context).substring(0, 40) + '...');
+        console.log('╚════════════════════════════════════════════════════════════╝');
+
+        const required: string[] = [];
+
+        for (const AgentClass of this.agentClasses) {
+            try {
+                // Get agent info
+                let tempInstance: any;
+                try {
+                    tempInstance = new AgentClass();
+                } catch (e) {
+                    tempInstance = { id: AgentClass.name, name: AgentClass.name, description: '' };
+                }
+
+                // Use AI to determine if agent should activate
+                const shouldRun = await AgentActivator.shouldActivate(tempInstance.name, tempInstance.description || tempInstance.name, context);
+                
+                if (shouldRun) {
+                    const instance = new AgentClass();
+                    required.push(instance.id);
+                    console.log(`[SubAgentFactory] 🤖 ✓ ${tempInstance.name} - ACTIVATED (AI)`);
+                }
+            } catch (e) {
+                console.error(`[SubAgentFactory] ✗ Error in AI activation for ${AgentClass.name}:`, e);
+                // Fallback to dynamic activator
+                try {
+                    let tempInstance: any;
+                    try {
+                        tempInstance = new AgentClass();
+                    } catch (e) {
+                        tempInstance = { id: AgentClass.name, name: AgentClass.name, description: '' };
+                    }
+                    
+                    const shouldRun = DynamicActivator.shouldActivate(tempInstance.name, tempInstance.description || '', context);
+                    if (shouldRun) {
+                        const instance = new AgentClass();
+                        required.push(instance.id);
+                        console.log(`[SubAgentFactory] 🔄 ✓ ${tempInstance.name} - ACTIVATED (Dynamic)`);
+                    }
+                } catch (fallbackError) {
+                    console.error(`[SubAgentFactory] ✗ Fallback also failed:`, fallbackError);
+                }
+            }
+        }
+
+        console.log(`[SubAgentFactory] 🤖 → AI-selected sub-agents: ${required.join(', ') || '(none)'}`);
+        
         return [...new Set(required)];
     }
 }

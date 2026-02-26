@@ -94,16 +94,20 @@ export const generateComplianceChecklist = async (fileBase64: string, mimeType: 
 
   const prompt = `You are an expert in international food trade compliance and document forensics. Analyze the provided document (Purchase Order, invoice, or product list) and the user-selected countries to perform three tasks:
 
-1.  **Security & Forensics Check:** Analyze the visual document for signs of tampering, edits, handwriting, or AI generation. Look for:
-    *   Mismatched fonts or inconsistent noise patterns indicating cut-and-paste edits.
-    *   **Handwriting**: Ink-strokes, manual signatures by unauthorized parties, or hand-written corrections to quantities/prices.
-    *   Logical inconsistencies (e.g., dates that don't match, prices that don't sum up).
-    *   Artifacts common in AI-generated fake documents (nonsense text in logos, impossible layouts).
-    *   Provide a 'tamperScore' (0-100) and a reason. If it looks legitimate, score it 0-10 and state "Document appears authentic."
+ 1.  **Security & Forensics Check:** Analyze the visual document for signs of tampering, edits, handwriting, or AI generation. Look for:
+     *   Mismatched fonts or inconsistent noise patterns indicating cut-and-paste edits.
+     *   **Handwriting**: Ink-strokes, manual signatures by unauthorized parties, or hand-written corrections to quantities/prices.
+     *   Logical inconsistencies (e.g., dates that don't match, prices that don't sum up).
+     *   Artifacts common in AI-generated fake documents (nonsense text in logos, impossible layouts).
+     *   Provide a 'tamperScore' (0-100) and a reason. If it looks legitimate, score it 0-10 and state "Document appears authentic."
 
-2.  **Extract Key Information:** Parse the document to identify the seller, buyer, and a list of all products with their quantities. For each product, determine its most likely 8 to 10-digit Harmonized System (HS) or tariff code, specific to the destination country. Also, identify if a product is explicitly described as 'organic' and set the corresponding boolean flag. If this info isn't in the document, use placeholder text like "N/A - from document". Use the user-provided country selection to populate origin and destination: Origin is ${fromCountry}, Destination is ${toCountry}.
+ 2.  **Extract Key Information:** Parse the document to identify the seller, buyer, and a list of all products with their quantities. For each product, determine its most likely 8 to 10-digit Harmonized System (HS) or tariff code, specific to the destination country. Also, identify if a product is explicitly described as 'organic' and set the corresponding boolean flag. If this info isn't in the document, use placeholder text like "N/A - from document". Use the user-provided country selection to populate origin and destination: Origin is ${fromCountry}, Destination is ${toCountry}.
 
-3.  **Generate Compliance Checklist:** Based on the extracted products, their identified HS codes, and the origin/destination countries, generate a detailed checklist of all required export and import documents. **Crucially, use the detailed HS code and the organic status for each product to validate and identify any commodity-specific documentation requirements.** For example, certain HS codes may require a Phytosanitary Certificate, and products marked as 'organic' will require an Organic Certificate or equivalent import permit for ${toCountry}. Include general documents (like invoices and customs declarations) as well as these specific ones. For each item in the checklist, provide its name, a brief description, the issuingAgency, a link to the agency's website if available, and categorize it as 'Customs', 'Regulatory', 'Food Safety', or 'Other'.
+ 3.  **Generate Compliance Checklist:** Based on the extracted products, their identified HS codes, and the origin/destination countries, generate a detailed checklist of all required export and import documents. **IMPORTANT: Generate GENERIC document names WITHOUT country suffixes.** For example:
+     - Use "Import Permit" NOT "Import Permit (Switzerland)"
+     - Use "Customs Declaration" NOT "Customs Declaration (USA)"
+     - Use "Health Certificate" NOT "Health Certificate for EU"
+     Include general documents (invoices, packing lists, bills of lading) and specific ones based on HS codes or organic status. For each item, provide its name (generic, no country suffix), a brief description, the issuingAgency, and categorize it as 'Customs', 'Regulatory', 'Food Safety', 'Quality', 'Transport', 'Organic', or 'Other'.
 
 Your entire response must be a single JSON object that strictly adheres to the provided schema.`;
 

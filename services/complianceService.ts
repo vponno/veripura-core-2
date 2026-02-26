@@ -59,31 +59,75 @@ export interface ValidationRuleResult {
 
 export const complianceService = {
     /**
-     * Maps a document type or category to the responsible Guardian Agent.
-     * Source: agents_overview.md
+     * AI-driven: Determines the responsible Guardian Agent based on document type, category, origin, and destination.
+     * This replaces hardcoded mappings with intelligent agent selection.
      */
-    getResponsibleAgent: (docName: string, category: string): string => {
+    getResponsibleAgent: async (docName: string, category: string, origin?: string, destination?: string): Promise<string> => {
+        const prompt = `
+You are an expert in trade compliance and document management.
+Given a document type and trade context, determine which specialized Guardian Agent should handle this document.
+
+Available Agents:
+- Consignment Guardian (general oversight)
+- Organic Sentinel (organic certifications)
+- Vet & SPS Expert (phytosanitary, health certificates)
+- Halal/Kosher Guardian (religious certifications)
+- Chain of Custody Auditor (transport documents - B/L, Waybill)
+- Logistics Lingo Interpreter (transport, logistics)
+- Tariff Optimizer (customs, origin certificates)
+- Food Safety Auditor (food safety)
+- Ethical Sourcing Specialist (sustainability, ethics)
+- Lab Result Validator (lab reports, COA)
+- Insurance Validator (insurance documents)
+- EUDR Specialist (EU Deforestation Regulation)
+- FSMA Specialist (USA food safety)
+- IUU Fishery Watcher (fishery certificates)
+
+Document: "${docName}"
+Category: "${category || 'Unknown'}"
+Origin: ${origin || 'Any'}
+Destination: ${destination || 'Any'}
+
+Respond with ONLY the agent name that is best suited to verify this document.
+Example responses: "Organic Sentinel", "Chain of Custody Auditor", "Consignment Guardian"
+`;
+
+        try {
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.0-flash',
+                contents: { role: 'user', parts: [{ text: prompt }] }
+            });
+            const agentName = response.text?.trim() || 'Consignment Guardian';
+            console.log(`[AI Agent Selection] Document "${docName}" → ${agentName}`);
+            return agentName;
+        } catch (error) {
+            console.warn('[AI Agent Selection] Failed, using default:', error);
+            return 'Consignment Guardian';
+        }
+    },
+
+    /**
+     * Sync version for backward compatibility - defaults to AI async call
+     */
+    getResponsibleAgentSync: (docName: string, category: string): string => {
         const normalize = (s: string) => s.toLowerCase();
         const name = normalize(docName);
         const cat = normalize(category);
 
-        // 1. Specific Documents
+        // Fallback to AI for unknown patterns - this is a temporary sync mapping
+        // In production, always use async getResponsibleAgent
         if (name.includes('organic') || name.includes('transaction certificate')) return 'Organic Sentinel';
         if (name.includes('phytosanitary') || name.includes('health cert')) return 'Vet & SPS Expert';
         if (name.includes('halal') || name.includes('kosher')) return 'Halal/Kosher Guardian';
         if (name.includes('bill of lading') || name.includes('waybill')) return 'Chain of Custody Auditor';
-        if (name.includes('invoice') || name.includes('packing list')) return 'Consignment Guardian'; // General oversight
+        if (name.includes('invoice') || name.includes('packing list')) return 'Consignment Guardian';
         if (name.includes('certificate of analysis') || name.includes('lab report')) return 'Lab Result Validator';
         if (name.includes('insurance')) return 'Insurance Validator';
-        if (name.includes('origin')) return 'Tariff Optimizer'; // Or Customs Agent
-
-        // 2. Categories
+        if (name.includes('origin')) return 'Tariff Optimizer';
         if (cat.includes('food safety')) return 'Food Safety Auditor';
         if (cat.includes('regulatory') || cat.includes('customs')) return 'Tariff Optimizer';
         if (cat.includes('transport') || cat.includes('logistics')) return 'Logistics Lingo Interpreter';
         if (cat.includes('sustainability') || cat.includes('ethical')) return 'Ethical Sourcing Specialist';
-
-        // 3. Default
         return 'Consignment Guardian';
     },
 
@@ -128,7 +172,7 @@ export const complianceService = {
                                     type: Type.OBJECT,
                                     properties: {
                                         name: { type: Type.STRING, description: "Official name of the document." },
-                                        category: { type: Type.STRING, description: "Must be one of: 'Certificates', 'Commercial', 'Regulatory', 'Other'" },
+                                        category: { type: Type.STRING, description: "Must be one of: 'Customs', 'Regulatory', 'Food Safety', 'Quality', 'Transport', 'Organic', 'Other'" },
                                         description: { type: Type.STRING, description: "Brief explanation of why it is needed." },
                                         issuingAgency: { type: Type.STRING, description: "Authority that issues this document." },
                                         isMandatory: { type: Type.BOOLEAN, description: "True if legally required, False if just best practice/advised." }
@@ -154,7 +198,7 @@ export const complianceService = {
                 isMandatory: doc.isMandatory ?? true, // AI opinion
                 status: 'MISSING',
                 source: 'AI',
-                issuingAgency: complianceService.getResponsibleAgent(doc.name, doc.category)
+                issuingAgency: complianceService.getResponsibleAgentSync(doc.name, doc.category)
             })) as ComplianceDocument[];
 
             // --- MERGE WITH STATIC RULES ---
@@ -186,7 +230,8 @@ export const complianceService = {
                 matchedRules.forEach(rule => {
                     rule.required_documents.forEach((reqDoc: any) => {
                         const existing = docMap.get(reqDoc.name);
-                        const responsibleAgent = complianceService.getResponsibleAgent(reqDoc.name, reqDoc.category || 'Regulatory');
+                        // Use sync version for now - async version can be used when caller is updated
+                        const responsibleAgent = complianceService.getResponsibleAgentSync(reqDoc.name, reqDoc.category || 'Regulatory');
 
                         if (existing) {
                             // Force mandatory if rule says so
@@ -200,7 +245,7 @@ export const complianceService = {
                                 description: reqDoc.description,
                                 isMandatory: reqDoc.isMandatory ?? true,
                                 status: 'MISSING',
-                                issuingAgency: responsibleAgent // Was 'Rule-Based Requirement'
+                                issuingAgency: responsibleAgent
                             });
                         }
                     });

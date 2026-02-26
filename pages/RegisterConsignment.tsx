@@ -425,7 +425,7 @@ const RegisterConsignment: React.FC = () => {
 
             // 1b. CHECK: Is this document expected for this consignment?
             const roadmapKeys = Object.keys(consignment.roadmap || {});
-            
+
             // Normalize document names to handle duplicates and aliases
             const normalizeDocName = (name: string): string => {
                 const n = name.toLowerCase().trim();
@@ -439,7 +439,7 @@ const RegisterConsignment: React.FC = () => {
                     'phytosanitary certificate': ['phytosanitary certificate', 'phyto certificate', 'plant health certificate'],
                     'organic certificate': ['organic certificate', 'organic certification'],
                 };
-                
+
                 for (const [canonical, variants] of Object.entries(aliases)) {
                     if (variants.includes(n) || n.includes(canonical) || canonical.includes(n)) {
                         return canonical;
@@ -447,7 +447,7 @@ const RegisterConsignment: React.FC = () => {
                 }
                 return n;
             };
-            
+
             const normalizedRoadmapKeys = roadmapKeys.map(k => normalizeDocName(k));
             const detectedDocType = normalizeDocName(analysisResult.documentType || docType);
             const isExpectedDoc = normalizedRoadmapKeys.some(k => k === detectedDocType || detectedDocType.includes(k) || k.includes(detectedDocType));
@@ -641,29 +641,33 @@ const RegisterConsignment: React.FC = () => {
         // Sanitize AND normalize document names to prevent duplicates
         // Keys cannot contain: ~ * / [ ] \ and cannot start with .
         const normalizeDocName = (name: string): string => {
-            const n = String(name)
+            let n = String(name)
                 .replace(/^[.]+/, '') // Remove leading dots
                 .replace(/[~*\/\[\\\]]/g, '_') // Replace invalid chars with underscore
                 .replace(/\s*\([^)]*\)\s*/g, ' ') // Remove parenthetical suffixes like "(Switzerland)"
+                .replace(/[-/&]/g, ' ') // Replace common separators with space
                 .replace(/_+/g, ' ') // Replace underscores with spaces
+                .replace(/\s+/g, ' ') // Collapse multiple spaces to single
                 .trim()
                 .toLowerCase();
-            
+
             // Normalize common aliases to canonical names
             const aliases: Record<string, string[]> = {
-                'bill of lading': ['bill of lading', 'bill of lading _ air waybill', 'bill of lading (or air waybill)', 'b/l', 'bol', 'sea waybill', 'air waybill'],
+                'bill of lading': ['bill of lading', 'bill of lading air waybill', 'bill of lading (or air waybill)', 'b/l', 'bol', 'sea waybill', 'air waybill'],
                 'commercial invoice': ['commercial invoice', 'proforma invoice', 'invoice', 'sales invoice', 'sales contract'],
                 'packing list': ['packing list', 'pack list', 'packing slip'],
                 'certificate of origin': ['certificate of origin', 'coo', 'certificate of origin (c.o.o.)'],
-                'health certificate': ['health certificate', 'health certificate _ food safety certificate', 'health certificate (food safety certificate)', 'health certificate (for food products)', 'veterinary certificate'],
+                'health certificate': ['health certificate', 'health certificate food safety certificate', 'health certificate (food safety certificate)', 'health certificate (for food products)', 'veterinary certificate'],
                 'phytosanitary certificate': ['phytosanitary certificate', 'phyto certificate', 'plant health certificate'],
                 'organic certificate': ['organic certificate', 'organic certification'],
-                'import permit': ['import permit', 'import license', 'import permit (switzerland)', 'import license_permit (switzerland)'],
+                'import permit': ['import permit', 'import license', 'import permit (switzerland)', 'import license permit (switzerland)'],
                 'customs declaration': ['customs declaration', 'customs import declaration', 'customs import declaration (switzerland)'],
             };
-            
+
             for (const [canonical, variants] of Object.entries(aliases)) {
-                if (variants.includes(n) || n.includes(canonical) || canonical.includes(n)) {
+                // Normalize variants the same way before comparing
+                const normalizedVariants = variants.map(v => v.replace(/[-/&]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase());
+                if (normalizedVariants.includes(n) || n.includes(canonical) || canonical.includes(n)) {
                     return canonical;
                 }
             }
@@ -672,10 +676,10 @@ const RegisterConsignment: React.FC = () => {
 
         aiDocs.forEach(d => {
             const normalizedName = normalizeDocName(d.name);
-            
+
             // Check if this normalized name already exists (case-insensitive)
             const existingKey = Object.keys(dynamicRoadmap).find(k => normalizeDocName(k) === normalizedName);
-            
+
             if (existingKey) {
                 // Preserve existing upload data, just update meta if needed
                 dynamicRoadmap[existingKey] = {
@@ -692,7 +696,7 @@ const RegisterConsignment: React.FC = () => {
                     .replace(/[~*\/\[\\\]]/g, '_')
                     .replace(/\s*\([^)]*\)\s*/g, ' ') // Remove parenthetical
                     .trim();
-                    
+
                 dynamicRoadmap[safeName] = {
                     required: d.isMandatory !== false,
                     status: 'Pending',
@@ -707,7 +711,7 @@ const RegisterConsignment: React.FC = () => {
         existingReqs.forEach(req => {
             const normalizedReq = normalizeDocName(req);
             const existingKey = Object.keys(dynamicRoadmap).find(k => normalizeDocName(k) === normalizedReq);
-            
+
             if (!existingKey) {
                 const responsibleAgent = complianceService.getResponsibleAgent(req, 'Custom');
                 const safeReq = String(req)
@@ -1178,11 +1182,11 @@ const RegisterConsignment: React.FC = () => {
         }))
         // Sort: Validated first, then Pending, then others (case-insensitive)
         .sort((a, b) => {
-            const statusOrder: Record<string, number> = { 
-                'validated': 0, 
-                'pending': 1, 
-                'pending review': 2, 
-                'rejected': 3 
+            const statusOrder: Record<string, number> = {
+                'validated': 0,
+                'pending': 1,
+                'pending review': 2,
+                'rejected': 3
             };
             const orderA = statusOrder[a.status?.toLowerCase() ?? ''] ?? 99;
             const orderB = statusOrder[b.status?.toLowerCase() ?? ''] ?? 99;
@@ -1270,6 +1274,48 @@ const RegisterConsignment: React.FC = () => {
                 oldRoute={{ origin: consignment.exportFrom, destination: consignment.importTo }}
                 newRoute={pendingRoute || { origin: '', destination: '' }}
             />
+
+            <ErrorBoundary>
+                <GuardianRequirementChat
+                    onAddRule={(name, category) => {
+                        const newReq: ChecklistItem = {
+                            id: name, // Using name as ID for now
+                            documentName: name,
+                            description: 'Manually added requirement.',
+                            category: category,
+                            issuingAgency: complianceService.getResponsibleAgentSync(name, category),
+                            agencyLink: '',
+                            status: ChecklistItemStatus.PENDING,
+                            isMandatory: true
+                        };
+                        const available = consignment?.roadmap || {};
+                        const updatedMap = { ...available, [name]: newReq };
+                        setConsignment({ ...consignment, roadmap: updatedMap } as Consignment);
+                        if (consignment?.id) {
+                            consignmentService.updateConsignment(consignment.id, { roadmap: updatedMap });
+                        }
+                    }}
+                    onRemoveRule={(name) => {
+                        const available = consignment?.roadmap || {};
+                        // Create a copy to avoid direct mutation (though spread does shallow copy)
+                        const updatedMap = { ...available };
+
+                        // Simple fuzzy delete if exact match fails
+                        if (updatedMap[name]) {
+                            delete updatedMap[name];
+                        } else {
+                            // Try to find by partial match / loose equality if LLM returns different casing
+                            const key = Object.keys(updatedMap).find(k => k.toLowerCase() === name.toLowerCase());
+                            if (key) delete updatedMap[key];
+                        }
+
+                        setConsignment({ ...consignment, roadmap: updatedMap } as Consignment);
+                        if (consignment?.id) {
+                            consignmentService.updateConsignment(consignment.id, { roadmap: updatedMap });
+                        }
+                    }}
+                />
+            </ErrorBoundary>
 
             {/* Compliance Roadmap (Moved to Top) */}
             <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 p-8">
@@ -1371,51 +1417,6 @@ const RegisterConsignment: React.FC = () => {
                     </div>
                 </div>
             )}
-
-            {/* Shipment Configuration (Requirements & Attributes) */}
-            {/* Additional Requirements Selector */}
-            {/* Additional Requirements Selector (Replaced by Guardian Chat) */}
-            <ErrorBoundary>
-                <GuardianRequirementChat
-                    onAddRule={(name, category) => {
-                        const newReq: ChecklistItem = {
-                            id: name, // Using name as ID for now
-                            documentName: name,
-                            description: 'Manually added requirement.',
-                            category: category,
-                            issuingAgency: complianceService.getResponsibleAgentSync(name, category),
-                            agencyLink: '',
-                            status: ChecklistItemStatus.PENDING,
-                            isMandatory: true
-                        };
-                        const available = consignment?.roadmap || {};
-                        const updatedMap = { ...available, [name]: newReq };
-                        setConsignment({ ...consignment, roadmap: updatedMap } as Consignment);
-                        if (consignment?.id) {
-                            consignmentService.updateConsignment(consignment.id, { roadmap: updatedMap });
-                        }
-                    }}
-                    onRemoveRule={(name) => {
-                        const available = consignment?.roadmap || {};
-                        // Create a copy to avoid direct mutation (though spread does shallow copy)
-                        const updatedMap = { ...available };
-
-                        // Simple fuzzy delete if exact match fails
-                        if (updatedMap[name]) {
-                            delete updatedMap[name];
-                        } else {
-                            // Try to find by partial match / loose equality if LLM returns different casing
-                            const key = Object.keys(updatedMap).find(k => k.toLowerCase() === name.toLowerCase());
-                            if (key) delete updatedMap[key];
-                        }
-
-                        setConsignment({ ...consignment, roadmap: updatedMap } as Consignment);
-                        if (consignment?.id) {
-                            consignmentService.updateConsignment(consignment.id, { roadmap: updatedMap });
-                        }
-                    }}
-                />
-            </ErrorBoundary>
 
             {/* Route Mismatch Correction Modal */}
             {

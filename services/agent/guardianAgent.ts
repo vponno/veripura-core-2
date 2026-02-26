@@ -57,9 +57,9 @@ export class GuardianAgent {
 
     /**
      * Synchronizes registered sub-agents with those required by the current context.
-     * This is the "Summoner" pattern.
+     * This is the "Summoner" pattern - now AI-driven for fully agentic behavior.
      */
-    public synchronizeSubAgents() {
+    public async synchronizeSubAgents() {
         // Extract context for the factory (flattened view of knowledge graph)
         const context: any = {};
         this.graph.serialize().facts.forEach(f => {
@@ -69,7 +69,8 @@ export class GuardianAgent {
             if (f.predicate === 'is_organic') context.isOrganic = f.object === 'true';
         });
 
-        const requiredIds = SubAgentFactory.getRequiredSubAgents(context);
+        // Use AI-driven agent activation (fully agentic)
+        const requiredIds = await SubAgentFactory.getRequiredSubAgentsAI(context);
 
         // 1. Unregister if no longer needed
         Array.from(this.subAgents.keys()).forEach(id => {
@@ -155,8 +156,8 @@ export class GuardianAgent {
         logger.log(`╚════════════════════════════════════════════════════════════╝`);
         logger.log(`[GuardianAgent] Event payload:`, JSON.stringify(event.payload, null, 2));
 
-        // Automated Sync before processing
-        this.synchronizeSubAgents();
+        // Automated Sync before processing (AI-driven agent activation)
+        await this.synchronizeSubAgents();
 
         const result: AgentEventResult = {
             success: true,

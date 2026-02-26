@@ -70,7 +70,8 @@ export const GuardianRequirementChat: React.FC<GuardianRequirementChatProps> = (
                     ? intent.category as ChecklistItemCategory
                     : ChecklistItemCategory.REGULATORY;
 
-                const agentId = complianceService.getResponsibleAgent(docName, categoryEnum);
+                // Use sync version - async version is for future use
+                const agentId = complianceService.getResponsibleAgentSync(docName, categoryEnum);
                 const { getAgentPersona } = await import('./AgentPersonas');
                 const persona = getAgentPersona(agentId);
 

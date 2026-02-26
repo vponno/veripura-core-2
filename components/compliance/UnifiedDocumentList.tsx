@@ -68,14 +68,18 @@ export const UnifiedDocumentList: React.FC<UnifiedDocumentListProps> = ({
     }
 
     // Category Mapping & Sorting
-    const categoriesOrder = ['Commercial', 'Certificates', 'Regulatory', 'Other'];
+    const categoriesOrder = ['Commercial', 'Certificates', 'Customs', 'Food Safety', 'Regulatory', 'Quality', 'Transport', 'Organic', 'Other'];
 
     const categorizeDoc = (doc: DocumentItem) => {
+        // First check if doc has a valid category from AI
         if (doc.category && categoriesOrder.includes(doc.category)) return doc.category;
+        // Fallback to heuristic based on name
         const name = doc.name.toLowerCase();
         if (name.includes('invoice') || name.includes('packing list') || name.includes('purchase order') || name.includes('contract')) return 'Commercial';
         if (name.includes('certificate') || name.includes('organic') || name.includes('phytosanitary') || name.includes('health') || name.includes('origin') || name.includes('analysis')) return 'Certificates';
-        if (name.includes('bill of lading') || name.includes('air waybill') || name.includes('declaration') || name.includes('permit') || name.includes('license') || name.includes('waybill') || name.includes('eur.1')) return 'Regulatory';
+        if (name.includes('bill of lading') || name.includes('air waybill') || name.includes('waybill') || name.includes('eur.1')) return 'Transport';
+        if (name.includes('declaration') || name.includes('customs')) return 'Customs';
+        if (name.includes('permit') || name.includes('license')) return 'Regulatory';
         return 'Other';
     };
 
@@ -123,6 +127,15 @@ export const UnifiedDocumentList: React.FC<UnifiedDocumentListProps> = ({
         } else if (doc.category === 'Transport') {
             icon = <Truck size={20} />;
             iconBg = 'bg-orange-100 text-orange-600';
+        } else if (doc.category === 'Customs') {
+            icon = <FileText size={20} />;
+            iconBg = 'bg-purple-100 text-purple-600';
+        } else if (doc.category === 'Quality') {
+            icon = <ShieldCheck size={20} />;
+            iconBg = 'bg-cyan-100 text-cyan-600';
+        } else if (doc.category === 'Regulatory') {
+            icon = <ShieldAlert size={20} />;
+            iconBg = 'bg-indigo-100 text-indigo-600';
         }
 
         return (

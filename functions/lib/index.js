@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseDocument = exports.getComplianceRules = void 0;
+exports.onMailAdded = exports.sendEmail = exports.parseDocument = exports.getComplianceRules = void 0;
 const functions = require("firebase-functions");
 const bigquery_1 = require("@google-cloud/bigquery");
 const llama_cloud_1 = require("@llamaindex/llama-cloud");
@@ -113,6 +113,78 @@ exports.parseDocument = functions.https.onCall(async (data, context) => {
     catch (error) {
         console.error("LlamaParse Backend Error:", error);
         throw new functions.https.HttpsError("internal", error.message || "Failed to parse document");
+    }
+});
+/**
+ * Cloud Function to send emails
+ * Uses SendGrid API - configure VITE_SENDGRID_API_KEY in Firebase config
+ */
+exports.sendEmail = functions.https.onCall(async (data, context) => {
+    var _a;
+    const { to, subject, html } = data;
+    if (!to || !subject) {
+        throw new functions.https.HttpsError("invalid-argument", "Missing required fields: to, subject");
+    }
+    const apiKey = process.env.VITE_SENDGRID_API_KEY || ((_a = functions.config().sendgrid) === null || _a === void 0 ? void 0 : _a.api_key);
+    if (!apiKey) {
+        console.warn("[sendEmail] SendGrid API key not configured. Email not sent.");
+        // Log to console for debugging
+        console.log(`[Email] To: ${to}, Subject: ${subject}`);
+        return { status: "skipped", reason: "SendGrid not configured" };
+    }
+    try {
+        const sgMail = require('@sendgrid/mail');
+        sgMail.setApiKey(apiKey);
+        const msg = {
+            to,
+            from: 'noreply@veripura.com',
+            subject,
+            html
+        };
+        await sgMail.send(msg);
+        console.log(`[Email] Sent to ${to}: ${subject}`);
+        return { status: "sent" };
+    }
+    catch (error) {
+        console.error("[sendEmail] Error:", error.message);
+        throw new functions.https.HttpsError("internal", "Failed to send email");
+    }
+});
+/**
+ * Firestore trigger for sending emails when documents are added to 'mail' collection
+ * Alternative to Firebase Extension
+ */
+exports.onMailAdded = functions.firestore
+    .document('mail/{mailId}')
+    .onCreate(async (snap, context) => {
+    var _a;
+    const mailData = snap.data();
+    if (!(mailData === null || mailData === void 0 ? void 0 : mailData.to) || !(mailData === null || mailData === void 0 ? void 0 : mailData.message)) {
+        console.log("[onMailAdded] Invalid mail data, skipping");
+        return;
+    }
+    const { to, message } = mailData;
+    const subject = message.subject || 'VeriPura Notification';
+    const html = message.html || message.text || '';
+    // Call sendEmail function
+    const apiKey = process.env.VITE_SENDGRID_API_KEY || ((_a = functions.config().sendgrid) === null || _a === void 0 ? void 0 : _a.api_key);
+    if (!apiKey) {
+        console.log("[onMailAdded] SendGrid not configured, skipping email");
+        return;
+    }
+    try {
+        const sgMail = require('@sendgrid/mail');
+        sgMail.setApiKey(apiKey);
+        await sgMail.send({
+            to,
+            from: 'noreply@veripura.com',
+            subject,
+            html
+        });
+        console.log(`[onMailAdded] Email sent to ${to}`);
+    }
+    catch (error) {
+        console.error("[onMailAdded] Failed to send email:", error.message);
     }
 });
 //# sourceMappingURL=index.js.map
