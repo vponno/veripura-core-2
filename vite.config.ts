@@ -46,6 +46,17 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': fileURLToPath(new URL('.', import.meta.url)),
       }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-charts': ['recharts']
+          }
+        }
+      },
+      chunkSizeWarningLimit: 1000
     }
   };
 });
