@@ -48,14 +48,25 @@ const RegisterConsignment: React.FC = () => {
     const location = useLocation(); // Used to check query params
 
     // Progress tracking for PO upload
-    const [uploadProgress, setUploadProgress] = useState<UploadProgressStep[]>([
+    // Progress steps for initial PO upload (full flow)
+    const initialProgressSteps: UploadProgressStep[] = [
         { id: 'analyze', label: 'AI Document Analysis', status: 'pending', icon: 'Brain' },
         { id: 'create', label: 'Creating Consignment', status: 'pending', icon: 'FilePlus' },
         { id: 'encrypt', label: 'Encrypting & Uploading', status: 'pending', icon: 'Lock' },
         { id: 'anchor', label: 'Blockchain Anchoring', status: 'pending', icon: 'Link' },
         { id: 'guardian', label: 'Guardian Agent Assessment', status: 'pending', icon: 'Shield' },
         { id: 'finalize', label: 'Finalizing', status: 'pending', icon: 'CheckCircle' }
-    ]);
+    ];
+
+    // Progress steps for subsequent document uploads
+    const subsequentProgressSteps: UploadProgressStep[] = [
+        { id: 'analyze', label: 'AI Document Analysis', status: 'pending', icon: 'Brain' },
+        { id: 'create', label: 'Encrypting & Preparing Storage', status: 'pending', icon: 'Lock' },
+        { id: 'assess', label: 'Guardian Specialist Assessment', status: 'pending', icon: 'ShieldCheck' },
+        { id: 'complete', label: 'Complete', status: 'pending', icon: 'CheckCircle' }
+    ];
+
+    const [uploadProgress, setUploadProgress] = useState<UploadProgressStep[]>(initialProgressSteps);
 
     // Scan results for displaying detailed information after upload
     const [scanResults, setScanResults] = useState<{
@@ -156,8 +167,9 @@ const RegisterConsignment: React.FC = () => {
         ));
     };
 
-    const resetProgress = () => {
-        setUploadProgress(prev => prev.map(step => ({ ...step, status: 'pending' as const, message: undefined })));
+    const resetProgress = (useInitialSteps: boolean = true) => {
+        const steps = useInitialSteps ? initialProgressSteps : subsequentProgressSteps;
+        setUploadProgress(steps);
     };
 
     const getProgressIcon = (status: UploadProgressStep['status'], iconName?: string) => {
@@ -177,6 +189,7 @@ const RegisterConsignment: React.FC = () => {
             case 'Lock': return <Lock className="w-5 h-5" />;
             case 'Link': return <Link className="w-5 h-5" />;
             case 'Shield': return <ShieldCheck className="w-5 h-5" />;
+            case 'ShieldCheck': return <ShieldCheck className="w-5 h-5" />;
             case 'CheckCircle': return <CheckCircle className="w-5 h-5" />;
             default: return <Circle className="w-5 h-5" />;
         }
@@ -399,7 +412,7 @@ const RegisterConsignment: React.FC = () => {
     const handleUploadForStep = async (docType: string, file: File) => {
         if (!consignment) return;
         setLoading(true);
-        resetProgress();
+        resetProgress(false);
         console.log("Starting atomic upload process for:", docType);
 
         try {
@@ -411,11 +424,33 @@ const RegisterConsignment: React.FC = () => {
             console.log("Step 1 Complete.");
 
             // 1b. CHECK: Is this document expected for this consignment?
-            const roadmapKeys = Object.keys(consignment.roadmap || {}).map(k => k.toLowerCase());
-            const detectedDocType = analysisResult.documentType?.toLowerCase() || docType.toLowerCase();
-            const isExpectedDoc = roadmapKeys.some(k =>
-                k.includes(detectedDocType) || detectedDocType.includes(k)
-            );
+            const roadmapKeys = Object.keys(consignment.roadmap || {});
+            
+            // Normalize document names to handle duplicates and aliases
+            const normalizeDocName = (name: string): string => {
+                const n = name.toLowerCase().trim();
+                // Map aliases to canonical names
+                const aliases: Record<string, string[]> = {
+                    'bill of lading': ['bill of lading', 'bill of lading _ air waybill', 'bill of lading (or air waybill)', 'b/l', 'bol', 'sea waybill', 'air waybill'],
+                    'commercial invoice': ['commercial invoice', 'proforma invoice', 'invoice', 'sales invoice'],
+                    'packing list': ['packing list', 'pack list', 'packing slip'],
+                    'certificate of origin': ['certificate of origin', 'coo', 'certificate of origin (c.o.o.)'],
+                    'health certificate': ['health certificate', 'health certificate _ food safety certificate', 'health certificate (food safety certificate)', 'health certificate (for food products)', 'veterinary certificate'],
+                    'phytosanitary certificate': ['phytosanitary certificate', 'phyto certificate', 'plant health certificate'],
+                    'organic certificate': ['organic certificate', 'organic certification'],
+                };
+                
+                for (const [canonical, variants] of Object.entries(aliases)) {
+                    if (variants.includes(n) || n.includes(canonical) || canonical.includes(n)) {
+                        return canonical;
+                    }
+                }
+                return n;
+            };
+            
+            const normalizedRoadmapKeys = roadmapKeys.map(k => normalizeDocName(k));
+            const detectedDocType = normalizeDocName(analysisResult.documentType || docType);
+            const isExpectedDoc = normalizedRoadmapKeys.some(k => k === detectedDocType || detectedDocType.includes(k) || k.includes(detectedDocType));
 
             if (!isExpectedDoc) {
                 console.warn(`[Upload] Document "${analysisResult.documentType}" is NOT in the consignment roadmap. Roadmap keys:`, roadmapKeys);
@@ -603,29 +638,61 @@ const RegisterConsignment: React.FC = () => {
         const currentRoadmap = consignment?.roadmap || {};
         const dynamicRoadmap: any = { ...currentRoadmap };
 
-        // Sanitize AI document names to prevent Firestore field path errors
+        // Sanitize AND normalize document names to prevent duplicates
         // Keys cannot contain: ~ * / [ ] \ and cannot start with .
-        const sanitizeDocName = (name: string): string => {
-            return String(name)
+        const normalizeDocName = (name: string): string => {
+            const n = String(name)
                 .replace(/^[.]+/, '') // Remove leading dots
                 .replace(/[~*\/\[\\\]]/g, '_') // Replace invalid chars with underscore
-                .trim();
+                .replace(/\s*\([^)]*\)\s*/g, ' ') // Remove parenthetical suffixes like "(Switzerland)"
+                .replace(/_+/g, ' ') // Replace underscores with spaces
+                .trim()
+                .toLowerCase();
+            
+            // Normalize common aliases to canonical names
+            const aliases: Record<string, string[]> = {
+                'bill of lading': ['bill of lading', 'bill of lading _ air waybill', 'bill of lading (or air waybill)', 'b/l', 'bol', 'sea waybill', 'air waybill'],
+                'commercial invoice': ['commercial invoice', 'proforma invoice', 'invoice', 'sales invoice', 'sales contract'],
+                'packing list': ['packing list', 'pack list', 'packing slip'],
+                'certificate of origin': ['certificate of origin', 'coo', 'certificate of origin (c.o.o.)'],
+                'health certificate': ['health certificate', 'health certificate _ food safety certificate', 'health certificate (food safety certificate)', 'health certificate (for food products)', 'veterinary certificate'],
+                'phytosanitary certificate': ['phytosanitary certificate', 'phyto certificate', 'plant health certificate'],
+                'organic certificate': ['organic certificate', 'organic certification'],
+                'import permit': ['import permit', 'import license', 'import permit (switzerland)', 'import license_permit (switzerland)'],
+                'customs declaration': ['customs declaration', 'customs import declaration', 'customs import declaration (switzerland)'],
+            };
+            
+            for (const [canonical, variants] of Object.entries(aliases)) {
+                if (variants.includes(n) || n.includes(canonical) || canonical.includes(n)) {
+                    return canonical;
+                }
+            }
+            return n;
         };
 
         aiDocs.forEach(d => {
-            const safeName = sanitizeDocName(d.name);
-
-            if (dynamicRoadmap[safeName]) {
+            const normalizedName = normalizeDocName(d.name);
+            
+            // Check if this normalized name already exists (case-insensitive)
+            const existingKey = Object.keys(dynamicRoadmap).find(k => normalizeDocName(k) === normalizedName);
+            
+            if (existingKey) {
                 // Preserve existing upload data, just update meta if needed
-                dynamicRoadmap[safeName] = {
-                    ...dynamicRoadmap[safeName],
-                    description: d.description || dynamicRoadmap[safeName].description,
-                    category: d.category || dynamicRoadmap[safeName].category,
-                    issuingAgency: d.issuingAgency || dynamicRoadmap[safeName].issuingAgency || 'Regulatory Authority',
+                dynamicRoadmap[existingKey] = {
+                    ...dynamicRoadmap[existingKey],
+                    description: d.description || dynamicRoadmap[existingKey].description,
+                    category: d.category || dynamicRoadmap[existingKey].category,
+                    issuingAgency: d.issuingAgency || dynamicRoadmap[existingKey].issuingAgency || 'Regulatory Authority',
                     required: d.isMandatory !== false
                 };
             } else {
-                // New requirement
+                // New requirement - use sanitized name but prefer normalized for consistency
+                const safeName = String(d.name)
+                    .replace(/^[.]+/, '')
+                    .replace(/[~*\/\[\\\]]/g, '_')
+                    .replace(/\s*\([^)]*\)\s*/g, ' ') // Remove parenthetical
+                    .trim();
+                    
                 dynamicRoadmap[safeName] = {
                     required: d.isMandatory !== false,
                     status: 'Pending',
@@ -638,9 +705,16 @@ const RegisterConsignment: React.FC = () => {
 
         // 3. Merge Manual Requirements
         existingReqs.forEach(req => {
-            const safeReq = sanitizeDocName(req);
-            if (!dynamicRoadmap[safeReq]) {
+            const normalizedReq = normalizeDocName(req);
+            const existingKey = Object.keys(dynamicRoadmap).find(k => normalizeDocName(k) === normalizedReq);
+            
+            if (!existingKey) {
                 const responsibleAgent = complianceService.getResponsibleAgent(req, 'Custom');
+                const safeReq = String(req)
+                    .replace(/^[.]+/, '')
+                    .replace(/[~*\/\[\\\]]/g, '_')
+                    .replace(/\s*\([^)]*\)\s*/g, ' ')
+                    .trim();
                 dynamicRoadmap[safeReq] = {
                     required: true,
                     status: 'Pending',
@@ -898,7 +972,7 @@ const RegisterConsignment: React.FC = () => {
                     </div>
                 )}
 
-                {((hasAnalyzedPO && oracleAnalysis) || (loading && hasAnalyzedPO)) && (
+                {loading && hasAnalyzedPO && (
                     <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
                         {/* Progress Tracker */}
                         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-6 mb-8 max-w-2xl mx-auto border border-slate-200 dark:border-slate-800">
@@ -1309,7 +1383,7 @@ const RegisterConsignment: React.FC = () => {
                             documentName: name,
                             description: 'Manually added requirement.',
                             category: category,
-                            issuingAgency: complianceService.getResponsibleAgent(name, category),
+                            issuingAgency: complianceService.getResponsibleAgentSync(name, category),
                             agencyLink: '',
                             status: ChecklistItemStatus.PENDING,
                             isMandatory: true

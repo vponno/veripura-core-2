@@ -145,3 +145,92 @@ export const parseDocument = functions.https.onCall(async (data: ParseRequest, c
         throw new functions.https.HttpsError("internal", error.message || "Failed to parse document");
     }
 });
+
+interface EmailRequest {
+    to: string;
+    subject: string;
+    html: string;
+}
+
+/**
+ * Cloud Function to send emails
+ * Uses SendGrid API - configure VITE_SENDGRID_API_KEY in Firebase config
+ */
+export const sendEmail = functions.https.onCall(async (data: EmailRequest, context) => {
+    const { to, subject, html } = data;
+
+    if (!to || !subject) {
+        throw new functions.https.HttpsError("invalid-argument", "Missing required fields: to, subject");
+    }
+
+    const apiKey = process.env.VITE_SENDGRID_API_KEY || functions.config().sendgrid?.api_key;
+
+    if (!apiKey) {
+        console.warn("[sendEmail] SendGrid API key not configured. Email not sent.");
+        // Log to console for debugging
+        console.log(`[Email] To: ${to}, Subject: ${subject}`);
+        return { status: "skipped", reason: "SendGrid not configured" };
+    }
+
+    try {
+        const sgMail = require('@sendgrid/mail');
+        sgMail.setApiKey(apiKey);
+
+        const msg = {
+            to,
+            from: 'noreply@veripura.com',
+            subject,
+            html
+        };
+
+        await sgMail.send(msg);
+        console.log(`[Email] Sent to ${to}: ${subject}`);
+        return { status: "sent" };
+
+    } catch (error: any) {
+        console.error("[sendEmail] Error:", error.message);
+        throw new functions.https.HttpsError("internal", "Failed to send email");
+    }
+});
+
+/**
+ * Firestore trigger for sending emails when documents are added to 'mail' collection
+ * Alternative to Firebase Extension
+ */
+export const onMailAdded = functions.firestore
+    .document('mail/{mailId}')
+    .onCreate(async (snap, context) => {
+        const mailData = snap.data();
+        
+        if (!mailData?.to || !mailData?.message) {
+            console.log("[onMailAdded] Invalid mail data, skipping");
+            return;
+        }
+
+        const { to, message } = mailData;
+        const subject = message.subject || 'VeriPura Notification';
+        const html = message.html || message.text || '';
+
+        // Call sendEmail function
+        const apiKey = process.env.VITE_SENDGRID_API_KEY || functions.config().sendgrid?.api_key;
+
+        if (!apiKey) {
+            console.log("[onMailAdded] SendGrid not configured, skipping email");
+            return;
+        }
+
+        try {
+            const sgMail = require('@sendgrid/mail');
+            sgMail.setApiKey(apiKey);
+
+            await sgMail.send({
+                to,
+                from: 'noreply@veripura.com',
+                subject,
+                html
+            });
+            console.log(`[onMailAdded] Email sent to ${to}`);
+        } catch (error: any) {
+            console.error("[onMailAdded] Failed to send email:", error.message);
+        }
+    });
